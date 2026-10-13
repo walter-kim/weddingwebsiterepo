@@ -77,7 +77,7 @@ var I18N = (function () {
 
       "hero.alt": "ゴールデンゲートブリッジを背にしたキンバリーとウォルター",
       "hero.date": "2027年10月9日（土）",
-      "hero.place": "百花籠（ひゃっかろう）· 愛知県名古屋市",
+      "hero.place": "百花籠（ひゃっかろう）<br>愛知県名古屋市",
       "hero.rsvp": "ご出欠のご回答",
 
       "story.eyebrow": "ようこそ",
@@ -263,7 +263,7 @@ var I18N = (function () {
 
       "hero.alt": "Kimberly 與 Walter 在金門大橋前",
       "hero.date": "2027年10月9日（星期六）",
-      "hero.place": "百花籠 Hyakkarou · 日本名古屋",
+      "hero.place": "百花籠 Hyakkarou<br>日本名古屋",
       "hero.rsvp": "回覆出席",
 
       "story.eyebrow": "歡迎",
@@ -449,7 +449,7 @@ var I18N = (function () {
 
       "hero.alt": "금문교 앞의 Kimberly와 Walter",
       "hero.date": "2027년 10월 9일 (토요일)",
-      "hero.place": "햣카로 百花籠 · 일본 나고야",
+      "hero.place": "햣카로 百花籠<br>일본 나고야",
       "hero.rsvp": "참석 회신하기",
 
       "story.eyebrow": "환영합니다",
