@@ -383,19 +383,19 @@ p.placeholder,
   color: var(--sage-deep);
   padding: 0 0.1em;
 }
-.hero__date {
-  font-family: var(--font-display);
-  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
-  letter-spacing: 0.06em;
-  margin-bottom: 0.25rem;
-  color: var(--charcoal);
-}
+.hero__date,
 .hero__place {
   font-family: var(--font-display);
   font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+  font-weight: 400;
   letter-spacing: 0.06em;
-  margin-bottom: 2.25rem;
   color: var(--charcoal);
+}
+.hero__date {
+  margin-bottom: 0.25rem;
+}
+.hero__place {
+  margin-bottom: 2.25rem;
 }
 
 @media (min-width: 860px) {
