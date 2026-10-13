@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Have a question? — Kimberly &amp; Walter</title>
+  <meta name="description" content="Ask Kimberly and Walter a question about their wedding in Nagoya, Japan on Saturday, October 9, 2027.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500&family=Noto+Serif+JP:wght@400;500&family=Noto+Serif+TC:wght@400;500&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261013">
+  <script src="gate.js"></script>
+</head>
+<body data-i18n-title="contact.meta.title">
+
+  <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
+
+  <!-- ============ LANGUAGE BAR + NAVIGATION ============ -->
+  <header class="site-header">
+    <div class="lang-bar" role="group" aria-label="Language" data-i18n-aria-label="lang.label">
+      <div class="lang-bar__inner">
+        <svg class="lang-bar__icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M2 12h20M12 2c3 3.3 4.5 6.6 4.5 10S15 18.7 12 22c-3-3.3-4.5-6.6-4.5-10S9 5.3 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <button type="button" class="lang-bar__btn" data-lang="en" lang="en" aria-pressed="true">English</button>
+        <button type="button" class="lang-bar__btn" data-lang="ja" lang="ja" aria-pressed="false">日本語</button>
+        <button type="button" class="lang-bar__btn" data-lang="zh" lang="zh-Hant" aria-pressed="false">繁體中文</button>
+        <button type="button" class="lang-bar__btn" data-lang="ko" lang="ko" aria-pressed="false">한국어</button>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Main">
+      <a class="nav__brand" href="index.html">K <span aria-hidden="true">&amp;</span> W</a>
+      <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="nav-menu">
+        <span class="nav__toggle-bar"></span>
+        <span class="sr-only" data-i18n="nav.menu">Menu</span>
+      </button>
+      <ul class="nav__menu" id="nav-menu">
+        <li><a href="index.html#story" data-i18n="nav.story">Our Story</a></li>
+        <li><a href="index.html#venue" data-i18n="nav.venue">Venue &amp; Travel</a></li>
+        <li><a href="index.html#schedule" data-i18n="nav.schedule">Schedule</a></li>
+        <li><a href="index.html#etiquette" data-i18n="nav.etiquette">Etiquette</a></li>
+        <li><a href="index.html#faq" data-i18n="nav.faq">FAQ</a></li>
+        <li><a href="contact.html" data-i18n="nav.contact" aria-current="page">Questions</a></li>
+        <li><a class="nav__cta" href="index.html#rsvp" data-i18n="nav.rsvp">RSVP</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="section" id="contact">
+      <div class="container container--narrow">
+        <h1 class="section__title" data-i18n="contact.heading">Have a question?</h1>
+
+        <!-- NOTE: the name="" attributes below are what gets sent to
+             Formspree. They stay in English in every language on purpose. -->
+        <form class="rsvp-form" id="contact-form" novalidate>
+          <div class="hp" aria-hidden="true">
+            <label for="contact-gotcha" data-i18n="contact.honeypot">Leave this field empty</label>
+            <input type="text" id="contact-gotcha" name="_gotcha" tabindex="-1" autocomplete="off">
+          </div>
+
+          <div class="field">
+            <label for="contact-name"><span data-i18n="contact.name">Your name</span> <span class="req" aria-hidden="true">*</span></label>
+            <input type="text" id="contact-name" name="name" autocomplete="name" required aria-required="true" aria-describedby="contact-name-error">
+            <p class="field__error" id="contact-name-error" role="alert"></p>
+          </div>
+
+          <div class="field">
+            <label for="contact-email"><span data-i18n="contact.email">Your email</span> <span class="req" aria-hidden="true">*</span></label>
+            <input type="email" id="contact-email" name="email" autocomplete="email" inputmode="email" required aria-required="true" aria-describedby="contact-email-error">
+            <p class="field__error" id="contact-email-error" role="alert"></p>
+          </div>
+
+          <div class="field">
+            <label for="contact-message"><span data-i18n="contact.message">Your question</span> <span class="req" aria-hidden="true">*</span></label>
+            <textarea id="contact-message" name="message" rows="6" required aria-required="true" aria-describedby="contact-message-error"></textarea>
+            <p class="field__error" id="contact-message-error" role="alert"></p>
+          </div>
+
+          <div class="form-actions">
+            <button class="button button--primary" type="submit" id="contact-submit" data-i18n="contact.submit">Send message</button>
+            <p class="form-alt">
+              <span data-i18n="contact.or">or</span> <a id="contact-mailto" href="mailto:kimkimchinv@gmail.com?subject=Question%20about%20Kim%20%26%20Walter%27s%20wedding" data-i18n="contact.emailUs">email us</a>
+            </p>
+          </div>
+
+          <div class="form-status" id="contact-status" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="site-footer__names">Kimberly <span class="amp">&amp;</span> Walter</p>
+      <p data-i18n="footer.date">Saturday, October 9, 2027 · Nagoya, Japan</p>
+    </div>
+  </footer>
+
+  <script src="i18n.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
