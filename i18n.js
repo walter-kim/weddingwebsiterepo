@@ -207,6 +207,7 @@ var I18N = (function () {
       "rsvp.submit": "送信する",
       "rsvp.or": "または",
       "rsvp.emailUs": "メールでご連絡ください",
+      "rsvp.logHint": "— Kimberly & Walter 用（非公開）",
 
       "closing.eyebrow": "ふたりより",
       "closing.text": "ご旅行についてご不明な点があれば、どうぞお気軽にご連絡ください。皆様に素晴らしい時間をお過ごしいただけるよう願っています。お会いできる日を楽しみにしています！",
@@ -393,6 +394,7 @@ var I18N = (function () {
       "rsvp.submit": "送出回覆",
       "rsvp.or": "或",
       "rsvp.emailUs": "以電子郵件回覆我們",
+      "rsvp.logHint": "— Kimberly & Walter 專用（私人）",
 
       "closing.eyebrow": "來自我們",
       "closing.text": "若對行程有任何疑問，請隨時與我們聯繫——我們希望您的旅程盡可能美好。期待很快與您相見！",
@@ -579,6 +581,7 @@ var I18N = (function () {
       "rsvp.submit": "회신 보내기",
       "rsvp.or": "또는",
       "rsvp.emailUs": "이메일로 회신하기",
+      "rsvp.logHint": "— Kimberly & Walter 전용 (비공개)",
 
       "closing.eyebrow": "두 사람으로부터",
       "closing.text": "여행에 관해 궁금한 점이 있으시면 언제든 연락해 주세요. 여러분의 여정이 최고의 경험이 되길 바랍니다. 곧 만나요!",

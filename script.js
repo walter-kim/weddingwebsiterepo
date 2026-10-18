@@ -5,15 +5,19 @@
    >>> THE THINGS YOU NEED TO EDIT ARE RIGHT HERE: <<<
    ========================================================================== */
 
-// 1) Paste your Formspree RSVP form URL between the quotes, e.g. "https://formspree.io/f/abcdwxyz"
-//    (See README.txt for how to create one for free — takes about two minutes.)
-const FORM_ENDPOINT = "";
+// 1) RSVP inbox — FormSubmit emails each reply to COUPLE_EMAIL (no account needed).
+//    First submission triggers a one-time confirmation email; click the link in it.
+//    Then log each reply in the private RSVP repo (see README.txt §3).
+const FORM_ENDPOINT = "https://formsubmit.co/ajax/kimkimchinv@gmail.com";
 
-// 2) Paste your Formspree Questions form URL here (a second form, same account).
-const CONTACT_FORM_ENDPOINT = "";
+// 2) Questions form — same service, tagged so you can tell RSVPs from questions.
+const CONTACT_FORM_ENDPOINT = "https://formsubmit.co/ajax/kimkimchinv@gmail.com";
 
 // 3) The email address guests can write to if a form isn't working for them.
 const COUPLE_EMAIL = "kimkimchinv@gmail.com";
+
+// 4) Private response log (Cursor Origin) — linked from the RSVP section for you.
+const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
 
 /* ========================================================================== */
 
@@ -187,15 +191,18 @@ const COUPLE_EMAIL = "kimkimchinv@gmail.com";
 
     function collectContactData() {
       var data = {
+        "Form": "Wedding Question",
         "Guest name": contactName.value.trim(),
         "Email": contactEmail.value.trim(),
         "Question": contactMessage.value.trim()
       };
       data._replyto = data["Email"];
       data._subject = "Question about Kim & Walter's wedding — " + data["Guest name"];
+      data._template = "table";
+      data._captcha = "false";
       data["Language used"] = (window.I18N && I18N.current) || "en";
       var gotcha = contactForm.elements._gotcha;
-      if (gotcha && gotcha.value) data._gotcha = gotcha.value;
+      if (gotcha && gotcha.value) data._honey = gotcha.value;
       return data;
     }
 
@@ -410,6 +417,7 @@ const COUPLE_EMAIL = "kimkimchinv@gmail.com";
   function collectData() {
     var attending = attendingValue();
     var data = {
+      "Form": "Wedding RSVP",
       "Guest name": form.elements.name.value.trim(),
       "Email": form.elements.email.value.trim(),
       "Attending": attending,
@@ -428,15 +436,17 @@ const COUPLE_EMAIL = "kimkimchinv@gmail.com";
       data["Dietary details (Other)"] = form.elements.dietary_other.value.trim();
     }
 
-    // Formspree niceties: reply-to the guest, a readable subject line, and
-    // which language the guest used (handy when reading their message).
+    // FormSubmit: reply-to guest, clear subject, table layout in the email.
     data._replyto = data["Email"];
     data._subject = "Wedding RSVP: " + data["Guest name"] + " — " + attending;
+    data._template = "table";
+    data._captcha = "false";
     data["Language used"] = (window.I18N && I18N.current) || "en";
+    data["Log in"] = RSVP_LOG_URL;
 
-    // Honeypot: if a bot filled it, include it so Formspree can discard the entry.
+    // Honeypot (FormSubmit uses _honey).
     var gotcha = form.elements._gotcha;
-    if (gotcha && gotcha.value) data._gotcha = gotcha.value;
+    if (gotcha && gotcha.value) data._honey = gotcha.value;
 
     return data;
   }
