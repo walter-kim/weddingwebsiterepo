@@ -5,21 +5,18 @@
    >>> THE THINGS YOU NEED TO EDIT ARE RIGHT HERE: <<<
    ========================================================================== */
 
-// 1) RSVP inbox — FormSubmit emails each reply to COUPLE_EMAIL (no account needed).
-//    First submission triggers a one-time activation email; click the link in it.
-//    Then log each reply in the private RSVP repo (see README.txt §3).
-const FORM_ENDPOINT = "https://formsubmit.co/ajax/kimkimchinv@gmail.com";
-const FORM_ENDPOINT_POST = "https://formsubmit.co/kimkimchinv@gmail.com";
+// 1) Google Sheets endpoint (Apps Script web app URL).
+//    See Wedding RSVP/google-apps-script/SETUP.md — paste the /exec URL here:
+const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyeMLPDdG60ww8Vr1k2o5uH7-X-mGylXGfCnLQ6Y0I0_I_ZkFe61H_sN9uzXN_u16q6DA/exec";
 
-// 2) Questions form — same service, tagged so you can tell RSVPs from questions.
-const CONTACT_FORM_ENDPOINT = "https://formsubmit.co/ajax/kimkimchinv@gmail.com";
-const CONTACT_FORM_ENDPOINT_POST = "https://formsubmit.co/kimkimchinv@gmail.com";
-
-// 3) The email address guests can write to if a form isn't working for them.
+// 2) Fallback email if Sheets isn’t configured or the network request fails.
 const COUPLE_EMAIL = "kimkimchinv@gmail.com";
 
-// 4) Private response log — linked from the RSVP section for you.
+// 3) Optional private GitHub log (couple bookmark).
 const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
+
+const FORM_ENDPOINT = SHEETS_ENDPOINT;
+const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
 /* ========================================================================== */
 
@@ -31,82 +28,46 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
   // language bar, falling back to English.
   var t = (window.I18N && I18N.t) || function (key) { return key; };
 
-  /* ---------- FormSubmit helpers (FormData + classic POST fallback) ---------- */
-  function dataToFormData(data) {
-    var fd = new FormData();
+  /* ---------- Submit helpers ---------- */
+  function publicFields(data) {
+    var out = {};
     Object.keys(data).forEach(function (key) {
-      if (data[key] === undefined || data[key] === null) return;
-      fd.append(key, String(data[key]));
+      if (key.charAt(0) === "_") return;
+      if (data[key] === undefined || data[key] === null || data[key] === "") return;
+      out[key] = data[key];
     });
-    return fd;
+    return out;
   }
 
-  function submitViaFormPost(actionUrl, data, nextUrl) {
-    var f = document.createElement("form");
-    f.method = "POST";
-    f.action = actionUrl;
-    f.style.display = "none";
-    Object.keys(data).forEach(function (key) {
-      if (data[key] === undefined || data[key] === null) return;
-      var input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value = String(data[key]);
-      f.appendChild(input);
-    });
-    if (nextUrl) {
-      var next = document.createElement("input");
-      next.type = "hidden";
-      next.name = "_next";
-      next.value = nextUrl;
-      f.appendChild(next);
+  function mailtoWithBody(data, subject) {
+    var body = Object.keys(publicFields(data))
+      .map(function (k) { return k + ": " + data[k]; })
+      .join("\n");
+    return "mailto:" + COUPLE_EMAIL
+      + "?subject=" + encodeURIComponent(subject || t("js.mailSubject"))
+      + "&body=" + encodeURIComponent(body);
+  }
+
+  function postToSheet(data) {
+    var payload = publicFields(data);
+    payload["Received at"] = new Date().toISOString();
+    // Map RSVP fields to sheet column names
+    if (payload["Number of guests (including yourself)"] != null) {
+      payload["Guest count"] = payload["Number of guests (including yourself)"];
     }
-    document.body.appendChild(f);
-    f.submit();
-  }
 
-  function postFormSubmit(ajaxUrl, postUrl, data, nextUrl) {
-    return fetch(ajaxUrl, {
+    // text/plain avoids a CORS preflight; Apps Script still reads JSON from the body.
+    return fetch(SHEETS_ENDPOINT, {
       method: "POST",
-      headers: { Accept: "application/json" },
-      body: dataToFormData(data)
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (json) {
-        if (!res.ok) {
-          var msg = json && json.message ? json.message : ("Server responded with " + res.status);
-          throw new Error(msg);
-        }
-        // FormSubmit returns success as the string "false" when activation is needed, etc.
-        if (json && (json.success === false || json.success === "false")) {
-          var err = new Error(json.message || "Submission failed");
-          err.formSubmit = json;
-          throw err;
+        if (!res.ok || json.ok === false) {
+          throw new Error((json && json.error) || ("Server responded with " + res.status));
         }
         return json;
       });
-    }).catch(function (err) {
-      // Network / CORS failures: fall back to a normal browser form POST (no fetch).
-      var isNetwork = err && (
-        err.name === "TypeError" ||
-        /networkerror|failed to fetch|load failed/i.test(err.message || "")
-      );
-      if (isNetwork && postUrl) {
-        submitViaFormPost(postUrl, data, nextUrl);
-        // Navigation away — leave the promise pending so UI stays on "Sending…"
-        return new Promise(function () {});
-      }
-      throw err;
-    });
-  }
-
-  function formSubmitErrorHtml(err, mailtoHref) {
-    var message = (err && err.message) || "";
-    if (/activation/i.test(message)) {
-      return t("js.activateForm");
-    }
-    return t("js.fail", {
-      detail: message ? " (" + escapeHtml(message) + ")" : "",
-      href: mailtoHref
     });
   }
 
@@ -277,13 +238,8 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
         "Email": contactEmail.value.trim(),
         "Question": contactMessage.value.trim()
       };
-      data._replyto = data["Email"];
       data._subject = "Question about Kim & Walter's wedding — " + data["Guest name"];
-      data._template = "table";
-      data._captcha = "false";
       data["Language used"] = (window.I18N && I18N.current) || "en";
-      var gotcha = contactForm.elements._gotcha;
-      if (gotcha && gotcha.value) data._honey = gotcha.value;
       return data;
     }
 
@@ -308,9 +264,10 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
 
       var data = collectContactData();
       updateContactMailto();
-      var mailto = contactMailHref();
+      var mailto = mailtoWithBody(data, data._subject);
 
-      if (!isHttpEndpoint(CONTACT_FORM_ENDPOINT)) {
+      if (!SHEETS_ENDPOINT) {
+        window.location.href = mailto;
         showContactStatus("info", t("js.contactNotConfigured", { href: mailto }));
         return;
       }
@@ -318,8 +275,7 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
       contactSubmit.disabled = true;
       contactSubmit.textContent = t("js.sending");
 
-      var nextUrl = location.origin + location.pathname + "?sent=1";
-      postFormSubmit(CONTACT_FORM_ENDPOINT, CONTACT_FORM_ENDPOINT_POST, data, nextUrl)
+      postToSheet(data)
         .then(function () {
           contactForm.classList.add("is-sent");
           showContactStatus("success", t("js.contactSuccess", {
@@ -327,27 +283,16 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
           }));
         })
         .catch(function (err) {
-          var message = (err && err.message) || "";
-          if (/activation/i.test(message)) {
-            showContactStatus("info", t("js.activateForm"));
-          } else {
-            showContactStatus("error", t("js.contactFail", {
-              detail: message ? " (" + escapeHtml(message) + ")" : "",
-              href: mailto
-            }));
-          }
+          showContactStatus("error", t("js.contactFail", {
+            detail: err && err.message ? " (" + escapeHtml(err.message) + ")" : "",
+            href: mailto
+          }));
         })
         .finally(function () {
           contactSubmit.disabled = false;
           contactSubmit.textContent = t("contact.submit");
         });
     });
-
-    // After FormSubmit classic-POST redirect back here
-    if (/[?&]sent=1(?:&|$)/.test(location.search)) {
-      contactForm.classList.add("is-sent");
-      showContactStatus("success", t("js.contactSuccess", { name: "" }));
-    }
   }
 
   /* ---------- RSVP form ---------- */
@@ -518,17 +463,9 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
       data["Dietary details (Other)"] = form.elements.dietary_other.value.trim();
     }
 
-    // FormSubmit: reply-to guest, clear subject, table layout in the email.
-    data._replyto = data["Email"];
     data._subject = "Wedding RSVP: " + data["Guest name"] + " — " + attending;
-    data._template = "table";
-    data._captcha = "false";
     data["Language used"] = (window.I18N && I18N.current) || "en";
     data["Log in"] = RSVP_LOG_URL;
-
-    // Honeypot (FormSubmit uses _honey).
-    var gotcha = form.elements._gotcha;
-    if (gotcha && gotcha.value) data._honey = gotcha.value;
 
     return data;
   }
@@ -545,24 +482,18 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
     }
 
     var data = collectData();
+    var mailto = mailtoWithBody(data, data._subject);
 
-    // No endpoint yet? Tell the guest clearly rather than failing silently.
-    if (!isHttpEndpoint(FORM_ENDPOINT)) {
-      var body = encodeURIComponent(
-        Object.keys(data)
-          .filter(function (k) { return k.charAt(0) !== "_" && data[k]; })
-          .map(function (k) { return k + ": " + data[k]; })
-          .join("\n")
-      );
-      showStatus("info", t("js.notConfigured", { href: mailHref() + "&body=" + body }));
+    if (!SHEETS_ENDPOINT) {
+      window.location.href = mailto;
+      showStatus("info", t("js.notConfigured", { href: mailto }));
       return;
     }
 
     submitButton.disabled = true;
     submitButton.textContent = t("js.sending");
 
-    var nextUrl = location.origin + location.pathname + "?rsvp=sent#rsvp";
-    postFormSubmit(FORM_ENDPOINT, FORM_ENDPOINT_POST, data, nextUrl)
+    postToSheet(data)
       .then(function () {
         form.classList.add("is-sent");
         showStatus("success", t("js.success", {
@@ -571,21 +502,15 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
         }));
       })
       .catch(function (err) {
-        showStatus(/activation/i.test((err && err.message) || "") ? "info" : "error", formSubmitErrorHtml(err, mailHref()));
+        showStatus("error", t("js.fail", {
+          detail: err && err.message ? " (" + escapeHtml(err.message) + ")" : "",
+          href: mailto
+        }));
       })
       .finally(function () {
         submitButton.disabled = false;
         submitButton.textContent = t("rsvp.submit");
       });
   });
-
-  // After FormSubmit classic-POST redirect back here
-  if (/[?&]rsvp=sent(?:&|$)/.test(location.search)) {
-    form.classList.add("is-sent");
-    showStatus("success", t("js.success", {
-      name: "",
-      thanks: t("js.successAttending")
-    }));
-  }
 
 })();

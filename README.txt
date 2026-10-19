@@ -61,33 +61,25 @@ fill them in. The English text itself is edited in index.html as before.
 
 3. HOW RSVPs AND QUESTIONS REACH YOU
 --------------------------------------------------------------------
-The site has no server of its own. When a guest submits the RSVP (or a
-question), FormSubmit emails the details to kimkimchinv@gmail.com.
-Subjects look like:
+Each RSVP (and each question) is written as a new row in your Google Sheet.
 
-  Wedding RSVP: Jane Doe — Joyfully accepts
-  Question about Kim & Walter's wedding — Jane Doe
+ONE-TIME SETUP — see:
+  Wedding RSVP / google-apps-script / SETUP.md
 
-ONE-TIME SETUP (first real test):
-  a) Open the site, send yourself a test RSVP.
-  b) Check kimkimchinv@gmail.com for an activation email from FormSubmit
-     and click the confirmation link once.
-  c) After that, every RSVP and question lands in that inbox as a table.
+Short version:
+  a) Create a Google Sheet named “Wedding RSVPs”.
+  b) Extensions → Apps Script → paste Code.gs → Deploy as Web app
+     (Execute as: Me, Who has access: Anyone).
+  c) Copy the /exec URL into script.js:
+        const SHEETS_ENDPOINT = "https://script.google.com/macros/s/…/exec";
+  d) Commit and push the website, then send a test RSVP.
 
-RECORDING RESPONSES (private RSVP repository):
-  Folder:  Wedding Prep / Wedding RSVP
-  Online:  https://github.com/walter-kim/wedding-rsvp
-  Linked from the RSVP section (“RSVP response log”).
+Download anytime from the sheet:
+  File → Download → Comma Separated Values (.csv)
+  or Microsoft Excel (.xlsx).
 
-  When an RSVP email arrives:
-  1. Open the Wedding RSVP folder (or the link above).
-  2. In Terminal, run:  python3 add_response.py
-  3. Answer the prompts — it updates responses.csv, writes a file under
-     responses/, and refreshes SUMMARY.md (yes/no counts and headcount).
-
-  You can also open responses.csv in Excel / Numbers / Google Sheets.
-
-The guest “email us” fallback still works if the online form ever fails.
+If SHEETS_ENDPOINT is empty, the form falls back to a prefilled email to
+kimkimchinv@gmail.com.
 
 
 4. HOW TO PUT IT ONLINE
