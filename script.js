@@ -6,17 +6,19 @@
    ========================================================================== */
 
 // 1) RSVP inbox — FormSubmit emails each reply to COUPLE_EMAIL (no account needed).
-//    First submission triggers a one-time confirmation email; click the link in it.
+//    First submission triggers a one-time activation email; click the link in it.
 //    Then log each reply in the private RSVP repo (see README.txt §3).
 const FORM_ENDPOINT = "https://formsubmit.co/ajax/kimkimchinv@gmail.com";
+const FORM_ENDPOINT_POST = "https://formsubmit.co/kimkimchinv@gmail.com";
 
 // 2) Questions form — same service, tagged so you can tell RSVPs from questions.
 const CONTACT_FORM_ENDPOINT = "https://formsubmit.co/ajax/kimkimchinv@gmail.com";
+const CONTACT_FORM_ENDPOINT_POST = "https://formsubmit.co/kimkimchinv@gmail.com";
 
 // 3) The email address guests can write to if a form isn't working for them.
 const COUPLE_EMAIL = "kimkimchinv@gmail.com";
 
-// 4) Private response log (Cursor Origin) — linked from the RSVP section for you.
+// 4) Private response log — linked from the RSVP section for you.
 const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
 
 /* ========================================================================== */
@@ -28,6 +30,85 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
   // t("key") returns the text for the language currently chosen in the
   // language bar, falling back to English.
   var t = (window.I18N && I18N.t) || function (key) { return key; };
+
+  /* ---------- FormSubmit helpers (FormData + classic POST fallback) ---------- */
+  function dataToFormData(data) {
+    var fd = new FormData();
+    Object.keys(data).forEach(function (key) {
+      if (data[key] === undefined || data[key] === null) return;
+      fd.append(key, String(data[key]));
+    });
+    return fd;
+  }
+
+  function submitViaFormPost(actionUrl, data, nextUrl) {
+    var f = document.createElement("form");
+    f.method = "POST";
+    f.action = actionUrl;
+    f.style.display = "none";
+    Object.keys(data).forEach(function (key) {
+      if (data[key] === undefined || data[key] === null) return;
+      var input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = String(data[key]);
+      f.appendChild(input);
+    });
+    if (nextUrl) {
+      var next = document.createElement("input");
+      next.type = "hidden";
+      next.name = "_next";
+      next.value = nextUrl;
+      f.appendChild(next);
+    }
+    document.body.appendChild(f);
+    f.submit();
+  }
+
+  function postFormSubmit(ajaxUrl, postUrl, data, nextUrl) {
+    return fetch(ajaxUrl, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: dataToFormData(data)
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (json) {
+        if (!res.ok) {
+          var msg = json && json.message ? json.message : ("Server responded with " + res.status);
+          throw new Error(msg);
+        }
+        // FormSubmit returns success as the string "false" when activation is needed, etc.
+        if (json && (json.success === false || json.success === "false")) {
+          var err = new Error(json.message || "Submission failed");
+          err.formSubmit = json;
+          throw err;
+        }
+        return json;
+      });
+    }).catch(function (err) {
+      // Network / CORS failures: fall back to a normal browser form POST (no fetch).
+      var isNetwork = err && (
+        err.name === "TypeError" ||
+        /networkerror|failed to fetch|load failed/i.test(err.message || "")
+      );
+      if (isNetwork && postUrl) {
+        submitViaFormPost(postUrl, data, nextUrl);
+        // Navigation away — leave the promise pending so UI stays on "Sending…"
+        return new Promise(function () {});
+      }
+      throw err;
+    });
+  }
+
+  function formSubmitErrorHtml(err, mailtoHref) {
+    var message = (err && err.message) || "";
+    if (/activation/i.test(message)) {
+      return t("js.activateForm");
+    }
+    return t("js.fail", {
+      detail: message ? " (" + escapeHtml(message) + ")" : "",
+      href: mailtoHref
+    });
+  }
 
   /* ---------- Mail links ---------- */
   function mailSubject() { return encodeURIComponent(t("js.mailSubject")); }
@@ -237,18 +318,8 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
       contactSubmit.disabled = true;
       contactSubmit.textContent = t("js.sending");
 
-      fetch(CONTACT_FORM_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(data)
-      })
-        .then(function (res) {
-          if (res.ok) return res.json().catch(function () { return {}; });
-          return res.json().catch(function () { return {}; }).then(function (json) {
-            var msg = json && json.errors ? json.errors.map(function (er) { return er.message; }).join(", ") : "";
-            throw new Error(msg || ("Server responded with " + res.status));
-          });
-        })
+      var nextUrl = location.origin + location.pathname + "?sent=1";
+      postFormSubmit(CONTACT_FORM_ENDPOINT, CONTACT_FORM_ENDPOINT_POST, data, nextUrl)
         .then(function () {
           contactForm.classList.add("is-sent");
           showContactStatus("success", t("js.contactSuccess", {
@@ -256,16 +327,27 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
           }));
         })
         .catch(function (err) {
-          showContactStatus("error", t("js.contactFail", {
-            detail: err && err.message ? " (" + escapeHtml(err.message) + ")" : "",
-            href: mailto
-          }));
+          var message = (err && err.message) || "";
+          if (/activation/i.test(message)) {
+            showContactStatus("info", t("js.activateForm"));
+          } else {
+            showContactStatus("error", t("js.contactFail", {
+              detail: message ? " (" + escapeHtml(message) + ")" : "",
+              href: mailto
+            }));
+          }
         })
         .finally(function () {
           contactSubmit.disabled = false;
           contactSubmit.textContent = t("contact.submit");
         });
     });
+
+    // After FormSubmit classic-POST redirect back here
+    if (/[?&]sent=1(?:&|$)/.test(location.search)) {
+      contactForm.classList.add("is-sent");
+      showContactStatus("success", t("js.contactSuccess", { name: "" }));
+    }
   }
 
   /* ---------- RSVP form ---------- */
@@ -479,18 +561,8 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
     submitButton.disabled = true;
     submitButton.textContent = t("js.sending");
 
-    fetch(FORM_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify(data)
-    })
-      .then(function (res) {
-        if (res.ok) return res.json().catch(function () { return {}; });
-        return res.json().catch(function () { return {}; }).then(function (json) {
-          var msg = json && json.errors ? json.errors.map(function (er) { return er.message; }).join(", ") : "";
-          throw new Error(msg || ("Server responded with " + res.status));
-        });
-      })
+    var nextUrl = location.origin + location.pathname + "?rsvp=sent#rsvp";
+    postFormSubmit(FORM_ENDPOINT, FORM_ENDPOINT_POST, data, nextUrl)
       .then(function () {
         form.classList.add("is-sent");
         showStatus("success", t("js.success", {
@@ -499,15 +571,21 @@ const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
         }));
       })
       .catch(function (err) {
-        showStatus("error", t("js.fail", {
-          detail: err && err.message ? " (" + escapeHtml(err.message) + ")" : "",
-          href: mailHref()
-        }));
+        showStatus(/activation/i.test((err && err.message) || "") ? "info" : "error", formSubmitErrorHtml(err, mailHref()));
       })
       .finally(function () {
         submitButton.disabled = false;
         submitButton.textContent = t("rsvp.submit");
       });
   });
+
+  // After FormSubmit classic-POST redirect back here
+  if (/[?&]rsvp=sent(?:&|$)/.test(location.search)) {
+    form.classList.add("is-sent");
+    showStatus("success", t("js.success", {
+      name: "",
+      thanks: t("js.successAttending")
+    }));
+  }
 
 })();
