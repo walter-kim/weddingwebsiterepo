@@ -50,11 +50,15 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
   function postToSheet(data) {
     var payload = publicFields(data);
-    payload["Received at"] = new Date().toISOString();
     // Map RSVP fields to sheet column names
     if (payload["Number of guests (including yourself)"] != null) {
       payload["Guest count"] = payload["Number of guests (including yourself)"];
+      delete payload["Number of guests (including yourself)"];
     }
+    // Not stored in the sheet
+    delete payload["Language used"];
+    delete payload["Log in"];
+    delete payload["Received at"];
 
     // text/plain avoids a CORS preflight; Apps Script still reads JSON from the body.
     return fetch(SHEETS_ENDPOINT, {
