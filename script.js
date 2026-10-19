@@ -240,7 +240,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
         "Form": "Wedding Question",
         "Guest name": contactName.value.trim(),
         "Email": contactEmail.value.trim(),
-        "Question": contactMessage.value.trim()
+        "Message": contactMessage.value.trim()
       };
       data._subject = "Question about Kim & Walter's wedding — " + data["Guest name"];
       data["Language used"] = (window.I18N && I18N.current) || "en";
