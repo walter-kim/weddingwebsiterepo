@@ -12,9 +12,6 @@ const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyeMLPDdG60ww8V
 // 2) Fallback email if Sheets isn’t configured or the network request fails.
 const COUPLE_EMAIL = "kimkimchinv@gmail.com";
 
-// 3) Optional private GitHub log (couple bookmark).
-const RSVP_LOG_URL = "https://github.com/walter-kim/wedding-rsvp";
-
 const FORM_ENDPOINT = SHEETS_ENDPOINT;
 const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
@@ -57,7 +54,6 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     }
     // Not stored in the sheet
     delete payload["Language used"];
-    delete payload["Log in"];
     delete payload["Received at"];
 
     // text/plain avoids a CORS preflight; Apps Script still reads JSON from the body.
@@ -469,7 +465,6 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
     data._subject = "Wedding RSVP: " + data["Guest name"] + " — " + attending;
     data["Language used"] = (window.I18N && I18N.current) || "en";
-    data["Log in"] = RSVP_LOG_URL;
 
     return data;
   }
