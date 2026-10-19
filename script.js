@@ -45,16 +45,38 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       + "&body=" + encodeURIComponent(body);
   }
 
-  function postToSheet(data) {
-    var payload = publicFields(data);
-    // Map RSVP fields to sheet column names
-    if (payload["Number of guests (including yourself)"] != null) {
-      payload["Guest count"] = payload["Number of guests (including yourself)"];
-      delete payload["Number of guests (including yourself)"];
+  function sheetPayload(data) {
+    // Explicit keys matching Apps Script headers (empty string when not applicable).
+    if (data["Form"] === "Wedding Question") {
+      return {
+        "Form": "Wedding Question",
+        "Guest name": data["Guest name"] || "",
+        "Email": data["Email"] || "",
+        "Message": data["Message"] || data["Question"] || ""
+      };
     }
-    // Not stored in the sheet
-    delete payload["Language used"];
-    delete payload["Received at"];
+
+    var guestCount = data["Guest count"];
+    if (guestCount == null || guestCount === "") {
+      guestCount = data["Number of guests (including yourself)"];
+    }
+
+    return {
+      "Form": "Wedding RSVP",
+      "Guest name": data["Guest name"] || "",
+      "Email": data["Email"] || "",
+      "Attending": data["Attending"] || "",
+      "Guest count": guestCount != null && guestCount !== "" ? String(guestCount) : "",
+      "Plus one name": data["Plus one name"] || "",
+      "Welcome dinner / brunch": data["Welcome dinner / brunch"] || "",
+      "Dietary restrictions": data["Dietary restrictions"] || "",
+      "Dietary details (Other)": data["Dietary details (Other)"] || "",
+      "Message": data["Message"] || ""
+    };
+  }
+
+  function postToSheet(data) {
+    var payload = sheetPayload(data);
 
     // text/plain avoids a CORS preflight; Apps Script still reads JSON from the body.
     return fetch(SHEETS_ENDPOINT, {
