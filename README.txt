@@ -9,16 +9,18 @@ technical setup — it is just a few plain files that any web browser can open.
   i18n.js        The Japanese, Traditional Chinese and Korean translations
   styles.css     Colours, fonts and layout
   script.js      Makes the RSVP and contact forms work
-  gate.js        Invitation lock screen (change INVITE_CODE at the top)
-  images/        Your photos
-  README.txt     This file
+  gate.js          Invitation lock screen (name / email from guest list)
+  guests-data.js   Compact guest allowlist used by the lock screen
+  build-guests.py  Regenerates guests-data.js from the spreadsheet
+  images/          Your photos
+  README.txt       This file
 
 
 1. HOW TO LOOK AT THE SITE
 --------------------------
 Double-click "index.html". It opens in your web browser (Safari, Chrome, …)
-exactly as guests will see it. The first screen asks for the invitation
-code (see section 5). The bottom of the page and the Questions link in
+exactly as guests will see it. The first screen asks for the guest’s name
+or email (see section 5). The bottom of the page and the Questions link in
 the menu open contact.html. Nothing is online yet — it is only on your Mac.
 
 
@@ -110,23 +112,29 @@ Using your own domain name (like kimandwalter.com)? Both services let you
 connect one under their "Domain" settings; buy the name from any registrar.
 
 
-5. INVITATION CODE  (do this before you share the link)
+5. GUEST SIGN-IN  (name or email from the guest list)
 -------------------------------------------------------
-The site opens with a lock screen. Guests type a short shared word to get in.
+The site opens with a lock screen. Guests enter their name or email as it
+appears on the Wedding Guest List. Matching is case-insensitive; a unique
+first or last name also works when it isn’t shared with another guest.
 
-The invitation code is already set to:
+Who may enter: anyone named on the Guest List, including people who have
+not RSVP’d yet. Clear declines (No / Declined / …) are excluded. After
+unlock, the browser remembers them (and their tier, when present) so the
+RSVP form can prefill name/email later.
 
-        var INVITE_CODE = "goldengate";
+The live allowlist is guests-data.js (committed with the site). When you
+update “Wedding Guest List.xlsx” one folder up, regenerate it:
 
-Print that word on the invitations (one word, no space). Guests may type it
-in any capitalisation — GoldenGate and GOLDENGATE both work.
+        python3 -m pip install openpyxl
+        python3 build-guests.py
 
-To change it later, open "gate.js" and edit the word between the quotes, then
-save.
+Optional: add an Email column on the Guest List sheet (header row with
+“# / Name / …”) and rebuild — email sign-in will start working automatically.
 
 This is NOT strong security. It is only enough to keep the site invitation-
-only for ordinary guests. Anyone determined can still open gate.js and read
-the code. That is expected.
+only for ordinary guests. Anyone determined can still open the JS files and
+read the allowlist. That is expected.
 
 After you publish on Netlify and want a real password in front of the whole
 site, turn on Netlify Site Protection / password (a Pro feature) or Basic

@@ -12,6 +12,7 @@
     /* Fresh CSS/JS on every visit so normal refresh shows the latest edits. */
     window.__assetV = Date.now();
     document.write('<link rel="stylesheet" href="styles.css?v=' + window.__assetV + '">');
+    document.write('<script src="guests-data.js?v=' + window.__assetV + '"><\/script>');
     document.write('<script src="gate.js?v=' + window.__assetV + '"><\/script>');
   </script>
 </head>

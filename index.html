@@ -15,6 +15,7 @@
     /* Fresh CSS/JS on every visit so normal refresh shows the latest edits. */
     window.__assetV = Date.now();
     document.write('<link rel="stylesheet" href="styles.css?v=' + window.__assetV + '">');
+    document.write('<script src="guests-data.js?v=' + window.__assetV + '"><\/script>');
     document.write('<script src="gate.js?v=' + window.__assetV + '"><\/script>');
   </script>
 </head>
@@ -369,8 +370,23 @@
           </fieldset>
 
           <div id="attending-details">
-            <div class="field">
-              <label for="guests"><span data-i18n="rsvp.guests">Number of guests, including yourself (as noted on your invitation)</span> <span class="req" aria-hidden="true">*</span></label>
+            <fieldset class="field" aria-describedby="invitation-error">
+              <legend><span data-i18n="rsvp.invitation">Does your invitation include another guest?</span> <span class="req" aria-hidden="true">*</span></legend>
+              <div class="choice-group">
+                <label class="choice">
+                  <input type="radio" name="invitation_includes" value="No">
+                  <span data-i18n="rsvp.invitationNo">No — just me</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="invitation_includes" value="Yes">
+                  <span data-i18n="rsvp.invitationYes">Yes — two people are invited</span>
+                </label>
+              </div>
+              <p class="field__error" id="invitation-error" role="alert"></p>
+            </fieldset>
+
+            <div class="field" id="guests-field" hidden>
+              <label for="guests"><span data-i18n="rsvp.guests">How many will attend, including yourself?</span> <span class="req" aria-hidden="true">*</span></label>
               <select id="guests" name="guests" aria-describedby="guests-error">
                 <option value="1">1</option>
                 <option value="2">2</option>

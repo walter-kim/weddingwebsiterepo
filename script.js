@@ -25,6 +25,28 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   // language bar, falling back to English.
   var t = (window.I18N && I18N.t) || function (key) { return key; };
 
+  /* Soft-prefill name/email from the gate identity (localStorage). */
+  function prefillFromGateIdentity(root) {
+    if (!root || !window.WeddingGate || !WeddingGate.getIdentity) return;
+    var identity = WeddingGate.getIdentity();
+    if (!identity) return;
+    var nameInput = root.querySelector("#name, #contact-name, input[name='name']");
+    var emailInput = root.querySelector("#email, #contact-email, input[name='email']");
+    if (nameInput && !nameInput.value && identity.name) {
+      nameInput.value = identity.name;
+    }
+    if (emailInput && !emailInput.value && identity.email) {
+      emailInput.value = identity.email;
+    }
+  }
+
+  function prefillVisibleForms() {
+    prefillFromGateIdentity(document.getElementById("rsvp-form"));
+    prefillFromGateIdentity(document.getElementById("contact-form"));
+  }
+
+  document.addEventListener("wedding:unlocked", prefillVisibleForms);
+
   /* ---------- Submit helpers ---------- */
   function publicFields(data) {
     var out = {};
@@ -270,6 +292,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       if (fieldEl && fieldEl.classList.contains("is-invalid")) clearError(fieldEl);
       updateContactMailto();
     });
+    prefillFromGateIdentity(contactForm);
     updateContactMailto();
     document.addEventListener("i18n:change", updateContactMailto);
 
@@ -324,10 +347,13 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   var status = document.getElementById("form-status");
   var submitButton = document.getElementById("submit-button");
   var attendingDetails = document.getElementById("attending-details");
+  var guestsField = document.getElementById("guests-field");
   var guestsSelect = document.getElementById("guests");
   var plusOneField = document.getElementById("plus-one-field");
   var plusOneInput = document.getElementById("plus_one");
   var dietaryOtherField = document.getElementById("dietary-other-field");
+
+  prefillFromGateIdentity(form);
 
   function attendingValue() {
     var checked = form.querySelector('input[name="attending"]:checked');
@@ -336,6 +362,13 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   function isAttending() {
     return attendingValue() === "Joyfully accepts";
   }
+  function invitationIncludes() {
+    var checked = form.querySelector('input[name="invitation_includes"]:checked');
+    return checked ? checked.value : "";
+  }
+  function allowsTwoGuests() {
+    return invitationIncludes() === "Yes";
+  }
 
   // Show/hide the "attending only" details.
   function updateAttendingDetails() {
@@ -343,9 +376,20 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     attendingDetails.hidden = !show;
   }
 
+  // Solo invitation → guest count stays 1. Two invited → allow 1 or 2.
+  function updateGuestOptions() {
+    var showCount = allowsTwoGuests();
+    guestsField.hidden = !showCount;
+    if (!showCount) {
+      guestsSelect.value = "1";
+      clearError(guestsField);
+    }
+    updatePlusOne();
+  }
+
   // Show the plus-one name box only when 2 guests are selected.
   function updatePlusOne() {
-    var show = guestsSelect.value === "2";
+    var show = allowsTwoGuests() && guestsSelect.value === "2";
     plusOneField.hidden = !show;
     if (!show) {
       plusOneInput.value = "";
@@ -388,6 +432,12 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       clearError(r.closest(".field"));
     });
   });
+  form.querySelectorAll('input[name="invitation_includes"]').forEach(function (r) {
+    r.addEventListener("change", function () {
+      updateGuestOptions();
+      clearError(r.closest(".field"));
+    });
+  });
   guestsSelect.addEventListener("change", updatePlusOne);
   form.querySelectorAll('input[name="dietary"]').forEach(function (b) {
     b.addEventListener("change", handleDietaryExclusive);
@@ -397,7 +447,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   });
 
   updateAttendingDetails();
-  updatePlusOne();
+  updateGuestOptions();
   updateDietaryOther();
 
   /* ---------- Validation ---------- */
@@ -440,9 +490,22 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       clearError(attendingField);
     }
 
-    if (isAttending() && guestsSelect.value === "2" && !plusOneInput.value.trim()) {
-      fail(plusOneField, t("js.errPlusOne"));
+    if (isAttending()) {
+      var invitationField = form.querySelector('input[name="invitation_includes"]').closest(".field");
+      if (!invitationIncludes()) {
+        fail(invitationField, t("js.errInvitation"));
+      } else {
+        clearError(invitationField);
+      }
+
+      if (allowsTwoGuests() && guestsSelect.value === "2" && !plusOneInput.value.trim()) {
+        fail(plusOneField, t("js.errPlusOne"));
+      } else {
+        clearError(plusOneField);
+      }
     } else {
+      var invitationFieldIdle = form.querySelector('input[name="invitation_includes"]');
+      if (invitationFieldIdle) clearError(invitationFieldIdle.closest(".field"));
       clearError(plusOneField);
     }
 
@@ -478,8 +541,14 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       form.querySelectorAll('input[name="events"]:checked').forEach(function (b) { events.push(b.value); });
       form.querySelectorAll('input[name="dietary"]:checked').forEach(function (b) { dietary.push(b.value); });
 
-      data["Number of guests (including yourself)"] = guestsSelect.value;
-      data["Plus one name"] = plusOneInput.value.trim();
+      // Solo invites always submit as 1; two-person invites may choose 1 or 2.
+      var guestCount = allowsTwoGuests() ? guestsSelect.value : "1";
+      data["Invitation includes another guest"] = invitationIncludes();
+      data["Number of guests (including yourself)"] = guestCount;
+      data["Guest count"] = guestCount;
+      data["Plus one name"] = allowsTwoGuests() && guestCount === "2"
+        ? plusOneInput.value.trim()
+        : "";
       data["Welcome dinner / brunch"] = events.join(", ");
       data["Dietary restrictions"] = dietary.join(", ");
       data["Dietary details (Other)"] = form.elements.dietary_other.value.trim();
