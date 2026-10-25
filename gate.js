@@ -1,17 +1,21 @@
 /* ==========================================================================
    Kimberly & Walter — Invitation gate
 
-   Polite lock screen (not cryptographic). Guests unlock with their name or
-   email from the guest allowlist in guests-data.js (built from the spreadsheet).
+   Polite lock screen (not cryptographic). Guests unlock with either:
+   1. The shared invitation word (INVITE_CODE) — for first-time RSVP, no identity.
+   2. Their name or email from the guest allowlist in guests-data.js.
 
    Eligibility (see build-guests.py): anyone named on the Guest List may enter,
    including RSVP blank / not-yet. Only clear declines (No / Declined / …) are
-   excluded. After unlock, identity is stored for later tier personalization;
+   excluded. Name/email unlock stores identity for later tier personalization;
    site content is the same for everyone for now.
    ========================================================================== */
 
 (function () {
   "use strict";
+
+  // Shared invitation word (case-insensitive). Same field also accepts name/email.
+  var INVITE_CODE = "goldengate";
 
   var UNLOCK_KEY = "kw-wedding-unlocked";
   var IDENTITY_KEY = "kw-wedding-guest";
@@ -192,10 +196,10 @@
       "</div>" +
       '<div class="invite-gate__card">' +
         '<h1 class="invite-gate__names" id="invite-title" data-i18n="gate.names">Kimberly &amp; Walter</h1>' +
-        '<p class="invite-gate__lead" data-i18n="gate.lead">This page is for our invited guests. Please enter your name or email from our guest list.</p>' +
+        '<p class="invite-gate__lead" data-i18n="gate.lead">This page is for our invited guests. Enter the invitation word, or your name (or email when we have it).</p>' +
         '<form class="invite-gate__form" id="invite-form" autocomplete="on">' +
-          '<label for="invite-identity" data-i18n="gate.label">Your name or email</label>' +
-          '<input type="text" id="invite-identity" name="identity" inputmode="text" autocapitalize="words" spellcheck="false" autocomplete="name" required>' +
+          '<label for="invite-identity" data-i18n="gate.label">Invitation word, name, or email</label>' +
+          '<input type="text" id="invite-identity" name="identity" inputmode="text" autocapitalize="off" spellcheck="false" autocomplete="off" required>' +
           '<button class="button button--primary" type="submit" data-i18n="gate.submit">Enter</button>' +
           '<p class="invite-gate__error" id="invite-error" role="alert" hidden></p>' +
         "</form>" +
@@ -214,16 +218,29 @@
       error.hidden = false;
     }
 
+    function finishUnlock(guest) {
+      rememberUnlock(guest || null);
+      document.documentElement.classList.remove("is-locked");
+      gate.remove();
+      try {
+        document.dispatchEvent(new CustomEvent("wedding:unlocked"));
+      } catch (err) { /* older browsers */ }
+    }
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var result = findGuest(input.value);
+      var raw = input.value;
+
+      // Path 1: shared invitation word (no identity stored).
+      if (normalize(raw) === normalize(INVITE_CODE)) {
+        finishUnlock(null);
+        return;
+      }
+
+      // Path 2: guest-list name or email (stores identity for RSVP prefill / tier).
+      var result = findGuest(raw);
       if (result && result.guest) {
-        rememberUnlock(result.guest);
-        document.documentElement.classList.remove("is-locked");
-        gate.remove();
-        try {
-          document.dispatchEvent(new CustomEvent("wedding:unlocked"));
-        } catch (err) { /* older browsers */ }
+        finishUnlock(result.guest);
         return;
       }
       if (result && result.ambiguous) {
@@ -234,7 +251,7 @@
       } else {
         showError(
           "gate.error",
-          "We couldn’t find that name or email on our guest list. Please try again."
+          "That doesn’t match the invitation word or a name/email on our guest list. Please try again."
         );
       }
       input.focus();
