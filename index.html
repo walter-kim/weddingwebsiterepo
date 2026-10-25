@@ -451,6 +451,8 @@
           </div>
 
           <div class="form-status" id="form-status" role="status" aria-live="polite"></div>
+          <!-- Shown after a successful attending RSVP; filled by script.js -->
+          <div class="calendar-reminders" id="calendar-reminders" hidden></div>
         </form>
       </div>
     </section>
@@ -475,6 +477,7 @@
 
   <script>
     document.write('<script src="i18n.js?v=' + window.__assetV + '"><\/script>');
+    document.write('<script src="calendar-events.js?v=' + window.__assetV + '"><\/script>');
     document.write('<script src="script.js?v=' + window.__assetV + '"><\/script>');
   </script>
 </body>

@@ -53,6 +53,16 @@ var I18N = (function () {
       "js.contactNotConfigured": "<strong>The online form isn’t set up yet.</strong> Your message couldn’t be sent from this page. Please <a href=\"{href}\">email us instead</a> — the link opens a message with your question already filled in.",
       "js.contactSuccess": "<strong>Thank you, {name}!</strong> We’ve received your question and will write back soon.",
       "js.contactFail": "<strong>Sorry — something went wrong</strong> and your message wasn’t sent{detail}. Please try again in a moment, or <a href=\"{href}\">email us your question</a>.",
+      "js.calTitle": "Add these to your calendar",
+      "js.calLead": "Save the dates so you don’t miss a thing. Times that are still “to be announced” are added as all-day reminders with the venue notes.",
+      "js.calWedding": "Wedding celebration — Saturday, October 9",
+      "js.calDinner": "Welcome dinner — Friday, October 8",
+      "js.calBrunch": "Happy brunch — Sunday, October 10",
+      "js.calGoogle": "Google Calendar",
+      "js.calApple": "Apple / .ics",
+      "js.calOutlook": "Outlook",
+      "js.calSubscribe": "Prefer live updates? <a href=\"{webcal}\">Subscribe on Apple</a> or open the <a href=\"{href}\" target=\"_blank\" rel=\"noopener\">calendar feed</a> (Google Calendar → Other calendars → From URL).",
+      "js.calNote": "Google and one-click downloads are a snapshot. If we change times later, update your saved event or re-subscribe to the feed after we redeploy.",
       "gate.eyebrow": "Invitation",
       "gate.names": "Kimberly & Walter",
       "gate.lead": "This page is for our invited guests. Enter the invitation word, or your name (or email when we have it).",
@@ -249,7 +259,17 @@ var I18N = (function () {
       "js.contactMailSubject": "Question about Kim & Walter's wedding",
       "js.contactNotConfigured": "<strong>オンラインフォームはまだ準備中です。</strong>このページからメッセージを送信できませんでした。お手数ですが、<a href=\"{href}\">メールでご連絡ください</a>。リンクを開くと、ご質問が記入されたメールが作成されます。",
       "js.contactSuccess": "<strong>{name} 様、ありがとうございます！</strong>ご質問を受け付けました。折り返しご連絡いたします。",
-      "js.contactFail": "<strong>申し訳ありません。エラーが発生しました。</strong>メッセージを送信できませんでした{detail}。しばらくしてからもう一度お試しいただくか、<a href=\"{href}\">メールでご質問ください</a>。"
+      "js.contactFail": "<strong>申し訳ありません。エラーが発生しました。</strong>メッセージを送信できませんでした{detail}。しばらくしてからもう一度お試しいただくか、<a href=\"{href}\">メールでご質問ください</a>。",
+      "js.calTitle": "カレンダーに追加",
+      "js.calLead": "予定を忘れないよう、カレンダーに保存してください。「後日ご案内」の時間は、終日の予定として会場メモ付きで追加されます。",
+      "js.calWedding": "ウェディングパーティー — 10月9日（土）",
+      "js.calDinner": "ウェルカムディナー — 10月8日（金）",
+      "js.calBrunch": "ハッピーブランチ — 10月10日（日）",
+      "js.calGoogle": "Google カレンダー",
+      "js.calApple": "Apple / .ics",
+      "js.calOutlook": "Outlook",
+      "js.calSubscribe": "最新情報を自動で受け取りたい場合は、<a href=\"{webcal}\">Appleで購読</a>するか、<a href=\"{href}\" target=\"_blank\" rel=\"noopener\">カレンダーフィード</a>を開いてください（Googleカレンダー → 他のカレンダー → URLで追加）。",
+      "js.calNote": "Google追加や一回限りのダウンロードはその時点の内容です。時間を変更した場合は、保存済みの予定を手動で更新するか、再公開後にフィードを再購読してください。"
     },
 
     /* ====================================================================
@@ -439,7 +459,17 @@ var I18N = (function () {
       "js.contactMailSubject": "Question about Kim & Walter's wedding",
       "js.contactNotConfigured": "<strong>線上表單尚未開通。</strong>無法從此頁面送出您的訊息。請改為<a href=\"{href}\">以電子郵件聯絡我們</a>——點擊連結會開啟一封已填好您問題的郵件。",
       "js.contactSuccess": "<strong>{name}，感謝您！</strong>我們已收到您的問題，會盡快回覆。",
-      "js.contactFail": "<strong>很抱歉，發生了一些問題。</strong>您的訊息未能送出{detail}。請稍後再試，或<a href=\"{href}\">以電子郵件詢問我們</a>。"
+      "js.contactFail": "<strong>很抱歉，發生了一些問題。</strong>您的訊息未能送出{detail}。請稍後再試，或<a href=\"{href}\">以電子郵件詢問我們</a>。",
+      "js.calTitle": "加入您的日曆",
+      "js.calLead": "請把日期存進日曆，以免錯過。若時間仍顯示「另行通知」，會以全天提醒加入，並附上場地說明。",
+      "js.calWedding": "婚禮慶典 — 10月9日（六）",
+      "js.calDinner": "迎賓晚宴 — 10月8日（五）",
+      "js.calBrunch": "快樂早午餐 — 10月10日（日）",
+      "js.calGoogle": "Google 日曆",
+      "js.calApple": "Apple / .ics",
+      "js.calOutlook": "Outlook",
+      "js.calSubscribe": "想自動收到更新？請<a href=\"{webcal}\">在 Apple 訂閱</a>，或開啟<a href=\"{href}\" target=\"_blank\" rel=\"noopener\">日曆訂閱網址</a>（Google 日曆 → 其他日曆 → 使用網址新增）。",
+      "js.calNote": "Google 新增與單次下載只反映當下內容。若我們之後更改時間，請手動更新已儲存的行程，或在重新部署後重新訂閱。"
     },
 
     /* ====================================================================
@@ -629,7 +659,17 @@ var I18N = (function () {
       "js.contactMailSubject": "Question about Kim & Walter's wedding",
       "js.contactNotConfigured": "<strong>온라인 양식이 아직 준비되지 않았습니다.</strong> 이 페이지에서 메시지를 보낼 수 없었습니다. 대신 <a href=\"{href}\">이메일로 문의해 주세요</a> — 링크를 열면 질문이 미리 입력된 이메일이 열립니다.",
       "js.contactSuccess": "<strong>{name} 님, 감사합니다!</strong> 질문을 받았으며 곧 답장드리겠습니다.",
-      "js.contactFail": "<strong>죄송합니다. 문제가 발생했습니다.</strong> 메시지가 전송되지 않았습니다{detail}. 잠시 후 다시 시도하시거나 <a href=\"{href}\">이메일로 문의해 주세요</a>."
+      "js.contactFail": "<strong>죄송합니다. 문제가 발생했습니다.</strong> 메시지가 전송되지 않았습니다{detail}. 잠시 후 다시 시도하시거나 <a href=\"{href}\">이메일로 문의해 주세요</a>.",
+      "js.calTitle": "캘린더에 추가",
+      "js.calLead": "잊지 않도록 일정을 저장해 주세요. 시간이 아직 “추후 안내”인 경우, 장소 메모가 포함된 하루 종일 일정으로 추가됩니다.",
+      "js.calWedding": "웨딩 파티 — 10월 9일 (토)",
+      "js.calDinner": "웰컴 디너 — 10월 8일 (금)",
+      "js.calBrunch": "해피 브런치 — 10월 10일 (일)",
+      "js.calGoogle": "Google 캘린더",
+      "js.calApple": "Apple / .ics",
+      "js.calOutlook": "Outlook",
+      "js.calSubscribe": "자동 업데이트를 원하시면 <a href=\"{webcal}\">Apple에서 구독</a>하거나 <a href=\"{href}\" target=\"_blank\" rel=\"noopener\">캘린더 피드</a>를 열어 주세요 (Google 캘린더 → 다른 캘린더 → URL로 추가).",
+      "js.calNote": "Google 추가와 일회성 다운로드는 그 시점의 내용입니다. 시간을 나중에 바꾸면 저장된 일정을 직접 수정하거나, 재배포 후 피드를 다시 구독해 주세요."
     }
   };
 

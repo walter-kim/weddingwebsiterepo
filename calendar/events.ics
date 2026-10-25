@@ -1,0 +1,41 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Kimberly & Walter//Wedding//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Kimberly & Walter — Nagoya Wedding
+X-WR-TIMEZONE:Asia/Tokyo
+BEGIN:VEVENT
+UID:wedding-celebration@teamkimkim.com
+DTSTAMP:20261025T034203Z
+DTSTART;VALUE=DATE:20271009
+DTEND;VALUE=DATE:20271010
+SUMMARY:Kimberly & Walter — Wedding Celebration
+LOCATION:Hyakkarou 百花籠\, 3-6-3 Chikaramachi\, Higashi-ku\, Nagoya-shi\, Aic
+ hi 461-0018\, Japan
+DESCRIPTION:Ceremony and reception times to be announced.\n\nVenue: Hyakkar
+ ou (百花籠)\, Shirakabe district\, Nagoya.\nWedding website: https://teamkimk
+ im.com/#schedule
+END:VEVENT
+BEGIN:VEVENT
+UID:welcome-dinner@teamkimkim.com
+DTSTAMP:20261025T034203Z
+DTSTART;VALUE=DATE:20271008
+DTEND;VALUE=DATE:20271009
+SUMMARY:Kimberly & Walter — Welcome Dinner
+LOCATION:Nagoya\, Japan (exact venue to be announced)
+DESCRIPTION:Time and location to be announced.\n\nA relaxed evening before 
+ the wedding day.\nWedding website: https://teamkimkim.com/#schedule
+END:VEVENT
+BEGIN:VEVENT
+UID:happy-brunch@teamkimkim.com
+DTSTAMP:20261025T034203Z
+DTSTART;VALUE=DATE:20271010
+DTEND;VALUE=DATE:20271011
+SUMMARY:Kimberly & Walter — Happy Brunch
+LOCATION:Nagoya\, Japan (exact venue to be announced)
+DESCRIPTION:Time and location to be announced.\n\nOne more meal together be
+ fore everyone heads off to explore Japan.\nWedding website: https://teamki
+ mkim.com/#schedule
+END:VEVENT
+END:VCALENDAR

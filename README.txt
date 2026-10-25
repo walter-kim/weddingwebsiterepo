@@ -8,12 +8,15 @@ technical setup — it is just a few plain files that any web browser can open.
   contact.html   The “Have a question?” page — emails you what guests write
   i18n.js        The Japanese, Traditional Chinese and Korean translations
   styles.css     Colours, fonts and layout
-  script.js      Makes the RSVP and contact forms work
-  gate.js          Invitation lock screen (name / email from guest list)
-  guests-data.js   Compact guest allowlist used by the lock screen
-  build-guests.py  Regenerates guests-data.js from the spreadsheet
-  images/          Your photos
-  README.txt       This file
+  script.js           Makes the RSVP and contact forms work
+  calendar-events.js  Titles, dates, times, locations for calendar links
+  calendar/           Subscribeable .ics feeds (built from calendar-events.js)
+  build-calendar.py   Regenerates calendar/*.ics after you edit event details
+  gate.js             Invitation lock screen (name / email from guest list)
+  guests-data.js      Compact guest allowlist used by the lock screen
+  build-guests.py     Regenerates guests-data.js from the spreadsheet
+  images/             Your photos
+  README.txt          This file
 
 
 1. HOW TO LOOK AT THE SITE
@@ -142,7 +145,37 @@ Auth in the Netlify site settings. That sits on the server and is stronger
 than this lock screen.
 
 
-6. GUEST GUIDE LINK
+6. CALENDAR REMINDERS (after RSVP)
+---------------------------------
+After a guest joyfully accepts, the success screen offers buttons to add
+events to Google Calendar, Apple (.ics download), and Outlook. Wedding day
+is always offered; welcome dinner / happy brunch only if they checked those
+boxes on the form. Declines see no calendar offers.
+
+Edit event details in calendar-events.js (the CONFIG object at the top).
+Save, commit, deploy — new Google / .ics clicks then use the latest details.
+Those one-shot adds are snapshots: guests who already saved an event must
+update it themselves, OR subscribe to the live feed.
+
+For subscribeable calendars (Apple / Google “From URL”), after editing
+CONFIG also run:
+
+        python3 build-calendar.py
+
+then commit calendar/*.ics and deploy. Public feeds:
+
+        https://teamkimkim.com/calendar/events.ics
+        https://teamkimkim.com/calendar/wedding.ics
+        https://teamkimkim.com/calendar/dinner.ics
+        https://teamkimkim.com/calendar/brunch.ics
+
+While ceremony times are still “to be announced”, leave allDay: true and
+startTime/endTime as null so guests get an all-day reminder with location
+and notes — do not invent a fake final time. When times are final, set
+allDay to false and fill startTime / endTime (24h, Asia/Tokyo).
+
+
+7. GUEST GUIDE LINK
 -------------------
 The "Guest Guide" section links out to your existing Notion guide
 (the full version with Japanese, Chinese and Korean translations):
@@ -150,7 +183,7 @@ https://bramble-store-ddd.notion.site/Wedding-Guest-Guide-Nagoya-Japan-3895a7078
 If you move or rename that Notion page, update the link in index.html.
 
 
-7. WHERE THE CONTENT CAME FROM
+8. WHERE THE CONTENT CAME FROM
 ------------------------------
 Everything that is not in [square brackets] was copied from your public
 Notion "Save the Date" form and the linked Guest Guide on 4 October 2026:

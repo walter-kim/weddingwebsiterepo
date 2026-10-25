@@ -345,6 +345,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   if (!form) return;
 
   var status = document.getElementById("form-status");
+  var calendarReminders = document.getElementById("calendar-reminders");
   var submitButton = document.getElementById("submit-button");
   var attendingDetails = document.getElementById("attending-details");
   var guestsField = document.getElementById("guests-field");
@@ -352,6 +353,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   var plusOneField = document.getElementById("plus-one-field");
   var plusOneInput = document.getElementById("plus_one");
   var dietaryOtherField = document.getElementById("dietary-other-field");
+  var calendarState = null; // { keys: string[] } after a successful attending RSVP
 
   prefillFromGateIdentity(form);
 
@@ -525,6 +527,94 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     status.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
+  /* ---------- Calendar reminders (attending RSVP only) ---------- */
+  function selectedEventValues() {
+    var values = [];
+    form.querySelectorAll('input[name="events"]:checked').forEach(function (b) {
+      if (b.value !== "Not available") values.push(b.value);
+    });
+    return values;
+  }
+
+  function hideCalendarReminders() {
+    calendarState = null;
+    if (!calendarReminders) return;
+    calendarReminders.hidden = true;
+    calendarReminders.innerHTML = "";
+  }
+
+  function eventLabel(key) {
+    if (key === "wedding") return t("js.calWedding");
+    if (key === "dinner") return t("js.calDinner");
+    if (key === "brunch") return t("js.calBrunch");
+    return key;
+  }
+
+  function renderCalendarReminders() {
+    if (!calendarReminders || !calendarState || !window.WeddingCalendar) {
+      hideCalendarReminders();
+      return;
+    }
+
+    var Cal = window.WeddingCalendar;
+    var keys = calendarState.keys || [];
+    if (!keys.length) {
+      hideCalendarReminders();
+      return;
+    }
+
+    var html = "";
+    html += '<h3 class="calendar-reminders__title">' + escapeHtml(t("js.calTitle")) + "</h3>";
+    html += '<p class="calendar-reminders__lead">' + escapeHtml(t("js.calLead")) + "</p>";
+    html += '<ul class="calendar-reminders__list">';
+
+    keys.forEach(function (key) {
+      var google = Cal.googleUrl(key);
+      var outlook = Cal.outlookUrl(key);
+      var file = key + ".ics";
+      html += '<li class="calendar-reminders__event">';
+      html += '<p class="calendar-reminders__event-title">' + escapeHtml(eventLabel(key)) + "</p>";
+      html += '<div class="calendar-reminders__actions">';
+      html += '<a class="button button--secondary button--compact" href="'
+        + google + '" target="_blank" rel="noopener">'
+        + escapeHtml(t("js.calGoogle")) + "</a>";
+      html += '<button type="button" class="button button--secondary button--compact" data-cal-ics="'
+        + escapeHtml(key) + '" data-cal-file="' + escapeHtml(file) + '">'
+        + escapeHtml(t("js.calApple")) + "</button>";
+      html += '<a class="button button--secondary button--compact" href="'
+        + outlook + '" target="_blank" rel="noopener">'
+        + escapeHtml(t("js.calOutlook")) + "</a>";
+      html += "</div></li>";
+    });
+
+    html += "</ul>";
+    html += '<p class="calendar-reminders__subscribe">'
+      + t("js.calSubscribe", {
+        href: Cal.subscribeUrl("events.ics"),
+        webcal: Cal.webcalUrl("events.ics")
+      })
+      + "</p>";
+    html += '<p class="calendar-reminders__note">' + escapeHtml(t("js.calNote")) + "</p>";
+
+    calendarReminders.innerHTML = html;
+    calendarReminders.hidden = false;
+  }
+
+  if (calendarReminders) {
+    calendarReminders.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-cal-ics]");
+      if (!btn || !window.WeddingCalendar) return;
+      e.preventDefault();
+      var key = btn.getAttribute("data-cal-ics");
+      var file = btn.getAttribute("data-cal-file") || (key + ".ics");
+      WeddingCalendar.downloadIcs([key], file);
+    });
+  }
+
+  document.addEventListener("i18n:change", function () {
+    if (calendarState) renderCalendarReminders();
+  });
+
   /* ---------- Collect data ---------- */
   function collectData() {
     var attending = attendingValue();
@@ -565,6 +655,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     e.preventDefault();
     status.className = "form-status";
     status.innerHTML = "";
+    hideCalendarReminders();
 
     if (!validate()) {
       showStatus("error", t("js.errSummary"));
@@ -573,6 +664,10 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
     var data = collectData();
     var mailto = mailtoWithBody(data, data._subject);
+    var attendingNow = isAttending();
+    var eventKeys = attendingNow && window.WeddingCalendar
+      ? WeddingCalendar.keysFromFormSelection(selectedEventValues())
+      : [];
 
     if (!SHEETS_ENDPOINT) {
       window.location.href = mailto;
@@ -588,8 +683,12 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
         form.classList.add("is-sent");
         showStatus("success", t("js.success", {
           name: escapeHtml(data["Guest name"]),
-          thanks: t(isAttending() ? "js.successAttending" : "js.successDeclining")
+          thanks: t(attendingNow ? "js.successAttending" : "js.successDeclining")
         }));
+        if (attendingNow && eventKeys.length) {
+          calendarState = { keys: eventKeys };
+          renderCalendarReminders();
+        }
       })
       .catch(function (err) {
         showStatus("error", t("js.fail", {

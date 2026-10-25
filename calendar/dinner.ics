@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Kimberly & Walter//Wedding//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Kimberly & Walter — Nagoya Wedding
+X-WR-TIMEZONE:Asia/Tokyo
+BEGIN:VEVENT
+UID:welcome-dinner@teamkimkim.com
+DTSTAMP:20261025T034203Z
+DTSTART;VALUE=DATE:20271008
+DTEND;VALUE=DATE:20271009
+SUMMARY:Kimberly & Walter — Welcome Dinner
+LOCATION:Nagoya\, Japan (exact venue to be announced)
+DESCRIPTION:Time and location to be announced.\n\nA relaxed evening before 
+ the wedding day.\nWedding website: https://teamkimkim.com/#schedule
+END:VEVENT
+END:VCALENDAR

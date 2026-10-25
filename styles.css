@@ -190,6 +190,13 @@ p.placeholder,
 .button--primary:hover { background: var(--sage-deep); border-color: var(--sage-deep); color: var(--white); }
 .button--secondary { background: transparent; color: var(--charcoal); border-color: var(--charcoal); }
 .button--secondary:hover { background: var(--charcoal); color: var(--white); }
+.button--compact {
+  padding: 0.7rem 1.1rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  min-height: 44px;
+  text-align: center;
+}
 .button[disabled] { opacity: 0.6; cursor: wait; }
 
 /* ---------- Header / nav ---------- */
@@ -835,6 +842,56 @@ html.is-locked body > *:not(.invite-gate) { display: none !important; }
 
 .rsvp-form.is-sent .field,
 .rsvp-form.is-sent .form-actions { display: none; }
+
+/* ---------- Calendar reminders (post-RSVP) ---------- */
+.calendar-reminders {
+  margin-top: 1.5rem;
+  padding: 1.35rem 1.25rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--white);
+}
+.calendar-reminders[hidden] { display: none !important; }
+.calendar-reminders__title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 500;
+  margin: 0 0 0.4rem;
+  color: var(--charcoal);
+}
+.calendar-reminders__lead,
+.calendar-reminders__note,
+.calendar-reminders__subscribe {
+  margin: 0 0 1rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.calendar-reminders__note,
+.calendar-reminders__subscribe { margin-bottom: 0; }
+.calendar-reminders__subscribe { margin-top: 0.75rem; }
+.calendar-reminders__subscribe + .calendar-reminders__note { margin-top: 0.65rem; }
+.calendar-reminders__subscribe a { color: var(--sage-deep); font-weight: 500; }
+.calendar-reminders__list {
+  list-style: none;
+  margin: 0 0 0.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.calendar-reminders__event-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.98rem;
+  font-weight: 500;
+  color: var(--charcoal);
+}
+.calendar-reminders__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.calendar-reminders__actions .button { width: auto; }
 
 /* ---------- Closing ---------- */
 .closing { padding-top: 3rem; }

@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Kimberly & Walter//Wedding//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Kimberly & Walter — Nagoya Wedding
+X-WR-TIMEZONE:Asia/Tokyo
+BEGIN:VEVENT
+UID:happy-brunch@teamkimkim.com
+DTSTAMP:20261025T034203Z
+DTSTART;VALUE=DATE:20271010
+DTEND;VALUE=DATE:20271011
+SUMMARY:Kimberly & Walter — Happy Brunch
+LOCATION:Nagoya\, Japan (exact venue to be announced)
+DESCRIPTION:Time and location to be announced.\n\nOne more meal together be
+ fore everyone heads off to explore Japan.\nWedding website: https://teamki
+ mkim.com/#schedule
+END:VEVENT
+END:VCALENDAR
