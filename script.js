@@ -340,6 +340,56 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     });
   }
 
+  /* ---------- Shared calendar actions (WeddingCalendar) ---------- */
+  function calendarActionsHtml(key) {
+    if (!window.WeddingCalendar) return "";
+    var Cal = window.WeddingCalendar;
+    var google = Cal.googleUrl(key);
+    var outlook = Cal.outlookUrl(key);
+    var file = key + ".ics";
+    if (!google || !outlook) return "";
+    return '<div class="calendar-actions">'
+      + '<a class="button button--secondary button--compact" href="'
+      + google + '" target="_blank" rel="noopener">'
+      + escapeHtml(t("js.calGoogle")) + "</a>"
+      + '<button type="button" class="button button--secondary button--compact" data-cal-ics="'
+      + escapeHtml(key) + '" data-cal-file="' + escapeHtml(file) + '">'
+      + escapeHtml(t("js.calApple")) + "</button>"
+      + '<a class="button button--secondary button--compact" href="'
+      + outlook + '" target="_blank" rel="noopener">'
+      + escapeHtml(t("js.calOutlook")) + "</a>"
+      + "</div>";
+  }
+
+  function renderScheduleCalendarLinks() {
+    if (!window.WeddingCalendar) return;
+    document.querySelectorAll("[data-schedule-cal]").forEach(function (el) {
+      var key = el.getAttribute("data-schedule-cal");
+      var actions = calendarActionsHtml(key);
+      if (!actions) {
+        el.innerHTML = "";
+        el.hidden = true;
+        return;
+      }
+      el.hidden = false;
+      el.innerHTML =
+        '<p class="schedule-cal__label">' + escapeHtml(t("js.calAdd")) + "</p>"
+        + actions;
+    });
+  }
+
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-cal-ics]");
+    if (!btn || !window.WeddingCalendar) return;
+    e.preventDefault();
+    var key = btn.getAttribute("data-cal-ics");
+    var file = btn.getAttribute("data-cal-file") || (key + ".ics");
+    WeddingCalendar.downloadIcs([key], file);
+  });
+
+  renderScheduleCalendarLinks();
+  document.addEventListener("i18n:change", renderScheduleCalendarLinks);
+
   /* ---------- RSVP form ---------- */
   var form = document.getElementById("rsvp-form");
   if (!form) return;
@@ -569,22 +619,12 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     html += '<ul class="calendar-reminders__list">';
 
     keys.forEach(function (key) {
-      var google = Cal.googleUrl(key);
-      var outlook = Cal.outlookUrl(key);
-      var file = key + ".ics";
+      var actions = calendarActionsHtml(key);
+      if (!actions) return;
       html += '<li class="calendar-reminders__event">';
       html += '<p class="calendar-reminders__event-title">' + escapeHtml(eventLabel(key)) + "</p>";
-      html += '<div class="calendar-reminders__actions">';
-      html += '<a class="button button--secondary button--compact" href="'
-        + google + '" target="_blank" rel="noopener">'
-        + escapeHtml(t("js.calGoogle")) + "</a>";
-      html += '<button type="button" class="button button--secondary button--compact" data-cal-ics="'
-        + escapeHtml(key) + '" data-cal-file="' + escapeHtml(file) + '">'
-        + escapeHtml(t("js.calApple")) + "</button>";
-      html += '<a class="button button--secondary button--compact" href="'
-        + outlook + '" target="_blank" rel="noopener">'
-        + escapeHtml(t("js.calOutlook")) + "</a>";
-      html += "</div></li>";
+      html += actions;
+      html += "</li>";
     });
 
     html += "</ul>";
@@ -598,17 +638,6 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
     calendarReminders.innerHTML = html;
     calendarReminders.hidden = false;
-  }
-
-  if (calendarReminders) {
-    calendarReminders.addEventListener("click", function (e) {
-      var btn = e.target.closest("[data-cal-ics]");
-      if (!btn || !window.WeddingCalendar) return;
-      e.preventDefault();
-      var key = btn.getAttribute("data-cal-ics");
-      var file = btn.getAttribute("data-cal-file") || (key + ".ics");
-      WeddingCalendar.downloadIcs([key], file);
-    });
   }
 
   document.addEventListener("i18n:change", function () {

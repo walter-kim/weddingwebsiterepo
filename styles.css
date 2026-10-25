@@ -886,12 +886,32 @@ html.is-locked body > *:not(.invite-gate) { display: none !important; }
   font-weight: 500;
   color: var(--charcoal);
 }
-.calendar-reminders__actions {
+.calendar-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-.calendar-reminders__actions .button { width: auto; }
+.calendar-actions .button { width: auto; }
+
+/* ---------- Schedule calendar links ---------- */
+.schedule-cal {
+  margin-top: 1rem;
+}
+.schedule-cal[hidden] { display: none !important; }
+.schedule-cal__label {
+  margin: 0 0 0.45rem !important;
+  font-family: var(--font-body) !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sage-deep) !important;
+  line-height: 1.4 !important;
+}
+.schedule-cal .calendar-actions { gap: 0.4rem; }
+.schedule-cal .button--compact {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
 
 /* ---------- Closing ---------- */
 .closing { padding-top: 3rem; }
