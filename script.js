@@ -7,7 +7,7 @@
 
 // 1) Google Sheets endpoint (Apps Script web app URL).
 //    See google-apps-script/SETUP.md in the wedding-prep repo — paste the /exec URL here:
-const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyeMLPDdG60ww8Vr1k2o5uH7-X-mGylXGfCnLQ6Y0I0_I_ZkFe61H_sN9uzXN_u16q6DA/exec";
+const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycby4QBBdH-rTh81G7_kpG2dEXcHhf4fGZp3lxWsY0-P8AYOLG2T8nSiDoZbzoEclLKps/exec";
 
 // 2) Fallback email if Sheets isn’t configured or the network request fails.
 const COUPLE_EMAIL = "kimkimchinv@gmail.com";
