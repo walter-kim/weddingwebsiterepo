@@ -12,6 +12,11 @@ const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyeMLPDdG60ww8V
 // 2) Fallback email if Sheets isn’t configured or the network request fails.
 const COUPLE_EMAIL = "kimkimchinv@gmail.com";
 
+// 3) RSVP deadline. From this moment the form is replaced by a "RSVPs are
+//    closed — please email us" note (end of March 31, 2027, US Pacific time).
+//    Keep it in step with rsvpClosesAt in google-apps-script/Code.gs.
+const RSVP_CLOSES = "2027-04-01T00:00:00-07:00";
+
 const FORM_ENDPOINT = SHEETS_ENDPOINT;
 const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
@@ -95,7 +100,8 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       "Dietary restrictions": data["Dietary restrictions"] || "",
       "Dietary details (Other)": data["Dietary details (Other)"] || "",
       "Message": data["Message"] || "",
-      "Invitation includes another guest": data["Invitation includes another guest"] || "",
+      "Party": data["Party"] || "",
+      "Party size": data["Party size"] || "",
       "Language": data["Language used"] || "en",
       "Signed in as": data["Signed in as"] || ""
     };
@@ -112,7 +118,9 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (json) {
         if (!res.ok || json.ok === false) {
-          throw new Error((json && json.error) || ("Server responded with " + res.status));
+          var err = new Error((json && json.error) || ("Server responded with " + res.status));
+          err.closed = !!(json && json.closed);
+          throw err;
         }
         return json;
       });
@@ -416,8 +424,11 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   var attendingDetails = document.getElementById("attending-details");
   var guestsField = document.getElementById("guests-field");
   var guestsSelect = document.getElementById("guests");
-  var plusOneField = document.getElementById("plus-one-field");
-  var plusOneInput = document.getElementById("plus_one");
+  var partyNote = document.getElementById("party-note");
+  var eventsField = document.getElementById("events-field");
+  var closedBox = document.getElementById("rsvp-closed");
+  var extraGuests = document.getElementById("extra-guests");
+  var replyingAs = document.getElementById("replying-as");
   var dietaryOtherField = document.getElementById("dietary-other-field");
   var calendarState = null; // { keys: string[] } after a successful attending RSVP
 
@@ -430,39 +441,141 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   function isAttending() {
     return attendingValue() === "Joyfully accepts";
   }
-  function invitationIncludes() {
-    var checked = form.querySelector('input[name="invitation_includes"]:checked');
-    return checked ? checked.value : "";
+
+  /* ---------- Party (from the guest list, via the sign-in screen) ---------- */
+  // The guest list groups people into parties. A party of 1 can't add
+  // anyone; a party of N can bring up to N people, named on the form.
+  function identity() {
+    return (window.WeddingGate && WeddingGate.getIdentity && WeddingGate.getIdentity()) || null;
   }
-  function allowsTwoGuests() {
-    return invitationIncludes() === "Yes";
+  function partySize() {
+    var id = identity();
+    return id && id.size > 1 ? id.size : 1;
+  }
+  function guestCount() {
+    return Math.min(Number(guestsSelect.value) || 1, partySize());
+  }
+
+  function renderReplyingAs() {
+    var id = identity();
+    if (!replyingAs) return;
+    if (!id) {
+      replyingAs.innerHTML = "";
+      return;
+    }
+    replyingAs.innerHTML = t("js.replyingAs", { name: escapeHtml(id.name) })
+      + ' <button type="button" class="link-button" data-sign-out>' + escapeHtml(t("js.notYou")) + "</button>";
+  }
+  if (replyingAs) {
+    replyingAs.addEventListener("click", function (e) {
+      if (e.target.closest("[data-sign-out]") && window.WeddingGate) WeddingGate.signOut();
+    });
+  }
+
+  function renderPartyNote() {
+    var size = partySize();
+    partyNote.textContent = size > 1 ? t("js.partyMany", { count: size }) : t("js.partyOne");
+  }
+
+  // Options 1..party size; hidden entirely for a party of one.
+  function buildGuestOptions() {
+    var size = partySize();
+    var keep = guestsSelect.value || "1";
+    guestsSelect.innerHTML = "";
+    for (var n = 1; n <= size; n++) {
+      var opt = document.createElement("option");
+      opt.value = String(n);
+      opt.textContent = String(n);
+      guestsSelect.appendChild(opt);
+    }
+    guestsSelect.value = Number(keep) <= size ? keep : String(size);
+    guestsField.hidden = size <= 1;
+  }
+
+  // One name box per extra guest, prefilled with the names we know.
+  function updateExtraGuests() {
+    var want = guestCount() - 1;
+    var known = ((identity() || {}).others || []).filter(Boolean);
+    var boxes = extraGuests.querySelectorAll(".field");
+    for (var i = boxes.length; i < want; i++) {
+      var id = "extra_guest_" + (i + 2);
+      var field = document.createElement("div");
+      field.className = "field";
+      field.innerHTML = '<label for="' + id + '"><span data-extra-label="' + (i + 2) + '"></span>'
+        + ' <span class="req" aria-hidden="true">*</span></label>'
+        + '<input type="text" id="' + id + '" name="extra_guest" autocomplete="off">'
+        + '<p class="field__error" role="alert"></p>';
+      field.querySelector("input").value = known[i] || "";
+      extraGuests.appendChild(field);
+    }
+    for (var j = boxes.length - 1; j >= want; j--) boxes[j].remove();
+    labelExtraGuests();
+  }
+  function labelExtraGuests() {
+    extraGuests.querySelectorAll("[data-extra-label]").forEach(function (el) {
+      el.textContent = t("js.guestName", { n: el.getAttribute("data-extra-label") });
+    });
+  }
+  function extraGuestInputs() {
+    return Array.prototype.slice.call(extraGuests.querySelectorAll('input[name="extra_guest"]'));
+  }
+
+  /* Welcome dinner / brunch: only parties with a tier 1 or 2 guest are
+     asked. Parties who already said yes to either one before this rule
+     keep the question, so they can still see and change their answer. */
+  var eventsChecked = {}; // party → true/false from the sheet
+  function setEventsVisible(show) {
+    eventsField.hidden = !show;
+    if (!show) {
+      form.querySelectorAll('input[name="events"]').forEach(function (b) { b.checked = false; });
+    }
+  }
+  function updateEventsField() {
+    var id = identity();
+    if (!id || id.events) {
+      setEventsVisible(true);
+      return;
+    }
+    var key = String(id.party);
+    if (key in eventsChecked) {
+      setEventsVisible(eventsChecked[key]);
+      return;
+    }
+    setEventsVisible(false);
+    if (!isHttpEndpoint(SHEETS_ENDPOINT)) return;
+    var names = [id.name, id.listName].concat(id.others || []).filter(Boolean).join("|");
+    fetch(SHEETS_ENDPOINT + "?party=" + encodeURIComponent(key) + "&names=" + encodeURIComponent(names))
+      .then(function (res) { return res.json(); })
+      .then(function (json) { eventsChecked[key] = !!(json && json.hadEvents); })
+      .catch(function () { eventsChecked[key] = true; }) // can't check: don't take it away
+      .then(function () {
+        var now = identity();
+        if (now && String(now.party) === key) setEventsVisible(eventsChecked[key]);
+      });
+  }
+
+  function refreshParty() {
+    renderReplyingAs();
+    renderPartyNote();
+    buildGuestOptions();
+    updateExtraGuests();
+    updateEventsField();
+  }
+
+  /* ---------- After the deadline ---------- */
+  function rsvpIsClosed() {
+    return Date.now() >= Date.parse(RSVP_CLOSES);
+  }
+  function showClosed() {
+    form.hidden = true;
+    closedBox.innerHTML = t("js.rsvpClosed", { email: COUPLE_EMAIL });
+    closedBox.hidden = false;
   }
 
   // Show/hide the "attending only" details.
   function updateAttendingDetails() {
     var show = attendingValue() === "" || isAttending();
     attendingDetails.hidden = !show;
-  }
-
-  // Solo invitation → guest count stays 1. Two invited → allow 1 or 2.
-  function updateGuestOptions() {
-    var showCount = allowsTwoGuests();
-    guestsField.hidden = !showCount;
-    if (!showCount) {
-      guestsSelect.value = "1";
-      clearError(guestsField);
-    }
-    updatePlusOne();
-  }
-
-  // Show the plus-one name box only when 2 guests are selected.
-  function updatePlusOne() {
-    var show = allowsTwoGuests() && guestsSelect.value === "2";
-    plusOneField.hidden = !show;
-    if (!show) {
-      plusOneInput.value = "";
-      clearError(plusOneField);
-    }
   }
 
   // Show "tell us more" only when "Other" dietary is ticked.
@@ -500,13 +613,13 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       clearError(r.closest(".field"));
     });
   });
-  form.querySelectorAll('input[name="invitation_includes"]').forEach(function (r) {
-    r.addEventListener("change", function () {
-      updateGuestOptions();
-      clearError(r.closest(".field"));
-    });
+  guestsSelect.addEventListener("change", updateExtraGuests);
+  document.addEventListener("wedding:unlocked", refreshParty);
+  document.addEventListener("i18n:change", function () {
+    renderReplyingAs();
+    renderPartyNote();
+    labelExtraGuests();
   });
-  guestsSelect.addEventListener("change", updatePlusOne);
   form.querySelectorAll('input[name="dietary"]').forEach(function (b) {
     b.addEventListener("change", handleDietaryExclusive);
   });
@@ -515,8 +628,12 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   });
 
   updateAttendingDetails();
-  updateGuestOptions();
+  refreshParty();
   updateDietaryOther();
+  if (rsvpIsClosed()) showClosed();
+  document.addEventListener("i18n:change", function () {
+    if (!closedBox.hidden) showClosed();
+  });
 
   /* ---------- Validation ---------- */
   // Clear a field's error as soon as the guest starts fixing it.
@@ -558,24 +675,13 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       clearError(attendingField);
     }
 
-    if (isAttending()) {
-      var invitationField = form.querySelector('input[name="invitation_includes"]').closest(".field");
-      if (!invitationIncludes()) {
-        fail(invitationField, t("js.errInvitation"));
+    extraGuestInputs().forEach(function (input) {
+      if (isAttending() && !input.value.trim()) {
+        fail(input.closest(".field"), t("js.errPlusOne"));
       } else {
-        clearError(invitationField);
+        clearError(input.closest(".field"));
       }
-
-      if (allowsTwoGuests() && guestsSelect.value === "2" && !plusOneInput.value.trim()) {
-        fail(plusOneField, t("js.errPlusOne"));
-      } else {
-        clearError(plusOneField);
-      }
-    } else {
-      var invitationFieldIdle = form.querySelector('input[name="invitation_includes"]');
-      if (invitationFieldIdle) clearError(invitationFieldIdle.closest(".field"));
-      clearError(plusOneField);
-    }
+    });
 
     if (firstInvalid) {
       var focusable = firstInvalid.querySelector("input, select, textarea");
@@ -676,23 +782,25 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       form.querySelectorAll('input[name="events"]:checked').forEach(function (b) { events.push(b.value); });
       form.querySelectorAll('input[name="dietary"]:checked').forEach(function (b) { dietary.push(b.value); });
 
-      // Solo invites always submit as 1; two-person invites may choose 1 or 2.
-      var guestCount = allowsTwoGuests() ? guestsSelect.value : "1";
-      data["Invitation includes another guest"] = invitationIncludes();
-      data["Number of guests (including yourself)"] = guestCount;
-      data["Guest count"] = guestCount;
-      data["Plus one name"] = allowsTwoGuests() && guestCount === "2"
-        ? plusOneInput.value.trim()
-        : "";
-      data["Welcome dinner / brunch"] = events.join(", ");
+      // Never more than the party size on the guest list.
+      var count = String(guestCount());
+      data["Number of guests (including yourself)"] = count;
+      data["Guest count"] = count;
+      data["Plus one name"] = extraGuestInputs()
+        .map(function (input) { return input.value.trim(); })
+        .filter(Boolean)
+        .join(", ");
+      data["Welcome dinner / brunch"] = eventsField.hidden ? "" : events.join(", ");
       data["Dietary restrictions"] = dietary.join(", ");
       data["Dietary details (Other)"] = form.elements.dietary_other.value.trim();
     }
 
     data._subject = "Wedding RSVP: " + data["Guest name"] + " — " + attending;
     data["Language used"] = (window.I18N && I18N.current) || "en";
-    var identity = window.WeddingGate && WeddingGate.getIdentity && WeddingGate.getIdentity();
-    data["Signed in as"] = (identity && identity.name) || "";
+    var id = identity();
+    data["Signed in as"] = (id && id.name) || "";
+    data["Party"] = (id && id.party) || "";
+    data["Party size"] = String(partySize());
 
     return data;
   }
@@ -718,6 +826,11 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
     if (!validate()) {
       showStatus("error", t("js.errSummary"));
+      return;
+    }
+
+    if (rsvpIsClosed()) {
+      showClosed();
       return;
     }
 
@@ -758,6 +871,10 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
         }
       })
       .catch(function (err) {
+        if (err && err.closed) {
+          showClosed();
+          return;
+        }
         showStatus("error", t("js.fail", {
           detail: err && err.message ? " (" + escapeHtml(err.message) + ")" : "",
           href: mailto

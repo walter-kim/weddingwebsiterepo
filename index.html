@@ -339,12 +339,17 @@
         <!-- NOTE: the name="" and value="" attributes below are what gets sent to
              the RSVP Google Sheet. They stay in English in every language on purpose, so the
              RSVP list is consistent. Only the visible labels are translated. -->
+        <!-- Shown instead of the form after the RSVP deadline (script.js). -->
+        <div class="form-status form-status--info" id="rsvp-closed" hidden></div>
+
         <form class="rsvp-form" id="rsvp-form" novalidate>
           <!-- Honeypot anti-spam field (hidden from humans) -->
           <div class="hp" aria-hidden="true">
             <label for="_gotcha" data-i18n="rsvp.honeypot">Leave this field empty</label>
             <input type="text" id="_gotcha" name="_gotcha" tabindex="-1" autocomplete="off">
           </div>
+
+          <p class="replying-as" id="replying-as"></p>
 
           <div class="field">
             <label for="name"><span data-i18n="rsvp.name">Full name</span> <span class="req" aria-hidden="true">*</span></label>
@@ -374,37 +379,18 @@
           </fieldset>
 
           <div id="attending-details">
-            <fieldset class="field" aria-describedby="invitation-error">
-              <legend><span data-i18n="rsvp.invitation">Does your invitation include another guest?</span> <span class="req" aria-hidden="true">*</span></legend>
-              <div class="choice-group">
-                <label class="choice">
-                  <input type="radio" name="invitation_includes" value="No">
-                  <span data-i18n="rsvp.invitationNo">No — just me</span>
-                </label>
-                <label class="choice">
-                  <input type="radio" name="invitation_includes" value="Yes">
-                  <span data-i18n="rsvp.invitationYes">Yes — two people are invited</span>
-                </label>
-              </div>
-              <p class="field__error" id="invitation-error" role="alert"></p>
-            </fieldset>
+            <p class="party-note" id="party-note"></p>
 
             <div class="field" id="guests-field" hidden>
               <label for="guests"><span data-i18n="rsvp.guests">How many will attend, including yourself?</span> <span class="req" aria-hidden="true">*</span></label>
-              <select id="guests" name="guests" aria-describedby="guests-error">
-                <option value="1">1</option>
-                <option value="2">2</option>
-              </select>
+              <select id="guests" name="guests" aria-describedby="guests-error"></select>
               <p class="field__error" id="guests-error" role="alert"></p>
             </div>
 
-            <div class="field" id="plus-one-field" hidden>
-              <label for="plus_one"><span data-i18n="rsvp.plusOne">Name of the guest included in your invitation</span> <span class="req" aria-hidden="true">*</span></label>
-              <input type="text" id="plus_one" name="plus_one" autocomplete="off" aria-describedby="plus_one-error">
-              <p class="field__error" id="plus_one-error" role="alert"></p>
-            </div>
+            <!-- One name box per extra guest; built by script.js from the party size. -->
+            <div id="extra-guests"></div>
 
-            <fieldset class="field">
+            <fieldset class="field" id="events-field" hidden>
               <legend data-i18n="rsvp.events">Can you also join us for the welcome dinner and brunch?</legend>
               <div class="choice-group choice-group--stacked">
                 <label class="choice">

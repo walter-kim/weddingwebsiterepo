@@ -664,11 +664,42 @@ html.is-locked body > *:not(.invite-gate) { display: none !important; }
 }
 .invite-gate__form .button { justify-self: center; margin-top: 0.4rem; }
 .invite-gate__error {
-  margin: 0;
+  margin: 1rem 0 0;
   color: var(--error);
   font-size: 0.95rem;
   text-align: center;
 }
+.invite-gate__error a { color: inherit; }
+.invite-gate [hidden] { display: none !important; }
+.invite-gate__form .invite-gate__lead { text-align: center; margin-bottom: 1.2rem; }
+.invite-gate__party { margin: -1rem 0 1.6rem; color: var(--charcoal); }
+.invite-gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+}
+.invite-gate__choices { display: grid; gap: 0.6rem; margin-top: -1rem; }
+.invite-gate__choice {
+  display: grid;
+  gap: 0.2rem;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  padding: 0.8rem 1rem;
+}
+.invite-gate__choice span { font-size: 0.85rem; color: var(--ink-soft); font-weight: 400; }
+.invite-gate__link,
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--sage-deep);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.invite-gate__link { margin-top: 1rem; }
 
 /* ---------- FAQ ---------- */
 .faq { text-align: left; margin-top: 2rem; }
@@ -841,7 +872,18 @@ html.is-locked body > *:not(.invite-gate) { display: none !important; }
 .form-status a { color: inherit; font-weight: 500; }
 
 .rsvp-form.is-sent .field,
-.rsvp-form.is-sent .form-actions { display: none; }
+.rsvp-form.is-sent .form-actions,
+.rsvp-form.is-sent .replying-as,
+.rsvp-form.is-sent .party-note { display: none; }
+
+.replying-as { margin: 0 0 1.2rem; color: var(--ink-soft); }
+.party-note {
+  margin: 0 0 1.2rem;
+  padding: 0.8rem 1rem;
+  background: var(--ivory-deep);
+  border-radius: var(--radius);
+  color: var(--charcoal);
+}
 
 /* ---------- Calendar reminders (post-RSVP) ---------- */
 .calendar-reminders {
