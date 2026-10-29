@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Add to your calendar — Kimberly &amp; Walter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500&family=Noto+Serif+JP:wght@400;500&family=Noto+Serif+TC:wght@400;500&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    /* Fresh CSS/JS on every visit so event edits show up right away. */
+    window.__assetV = Date.now();
+    document.write('<link rel="stylesheet" href="styles.css?v=' + window.__assetV + '">');
+    /* ?lang=ja from the email becomes the remembered site language. */
+    try {
+      var emailLang = new URLSearchParams(location.search).get("lang");
+      if (/^(en|ja|zh|ko)$/.test(emailLang || "")) localStorage.setItem("kw-wedding-lang", emailLang);
+    } catch (e) { /* private mode etc. */ }
+  </script>
+</head>
+<!--
+  Linked from the RSVP confirmation email: calendar.html?e=wedding&lang=ja
+  (e = wedding | dinner | brunch). Everything shown here, and every
+  calendar link, is built from calendar-events.js when the guest opens
+  the page — so the email never carries stale details.
+  No invitation gate here on purpose: guests arrive from their inbox.
+-->
+<body data-i18n-title="cal.metaTitle">
+
+  <header class="site-header">
+    <div class="lang-bar" role="group" aria-label="Language" data-i18n-aria-label="lang.label">
+      <div class="lang-bar__inner">
+        <button type="button" class="lang-bar__btn" data-lang="en" lang="en" aria-pressed="true">English</button>
+        <button type="button" class="lang-bar__btn" data-lang="ja" lang="ja" aria-pressed="false">日本語</button>
+        <button type="button" class="lang-bar__btn" data-lang="zh" lang="zh-Hant" aria-pressed="false">繁體中文</button>
+        <button type="button" class="lang-bar__btn" data-lang="ko" lang="ko" aria-pressed="false">한국어</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section">
+      <div class="container container--narrow">
+        <p class="eyebrow" data-i18n="cal.eyebrow">Add to your calendar</p>
+        <h1 class="section__title" id="cal-title">Kimberly &amp; Walter</h1>
+        <p class="lead" id="cal-when"></p>
+        <p id="cal-where"></p>
+        <div id="cal-actions"></div>
+        <p class="calendar-reminders__subscribe" id="cal-subscribe"></p>
+        <p class="calendar-reminders__note" id="cal-missing" hidden data-i18n="cal.missing">We couldn’t find that event. Please use the links on the wedding website instead.</p>
+        <p><a href="index.html#schedule" data-i18n="cal.back">See the full schedule on our wedding website</a></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.write('<script src="i18n.js?v=' + window.__assetV + '"><\/script>');
+    document.write('<script src="calendar-events.js?v=' + window.__assetV + '"><\/script>');
+  </script>
+  <script>
+    (function () {
+      "use strict";
+      var params = new URLSearchParams(location.search);
+      var key = params.get("e") || "wedding";
+
+      var Cal = window.WeddingCalendar;
+      var t = function (k, vars) { return window.I18N ? I18N.t(k, vars) : k; };
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+
+      var LOCALES = { en: "en-US", ja: "ja-JP", zh: "zh-TW", ko: "ko-KR" };
+
+      function render() {
+        var ev = Cal && Cal.getEvent(key);
+        var missing = document.getElementById("cal-missing");
+        if (!ev) {
+          missing.hidden = false;
+          return;
+        }
+        var current = (window.I18N && I18N.current) || "en";
+        var p = ev.date.split("-").map(Number);
+        var date = new Date(Date.UTC(p[0], p[1] - 1, p[2])).toLocaleDateString(LOCALES[current] || "en-US", {
+          weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC"
+        });
+        var time = ev.allDay || !ev.startTime
+          ? t("cal.timeTba")
+          : ev.startTime + (ev.endTime ? "–" + ev.endTime : "");
+
+        document.getElementById("cal-title").textContent = ev.title;
+        document.getElementById("cal-when").textContent = date + " · " + time;
+        document.getElementById("cal-where").innerHTML = ev.location
+          ? '<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.location)
+            + '" target="_blank" rel="noopener">' + esc(ev.location) + "</a>"
+          : "";
+        document.getElementById("cal-actions").innerHTML =
+          '<div class="calendar-actions">'
+          + '<a class="button button--primary" href="' + Cal.googleUrl(key) + '">' + esc(t("js.calGoogle")) + "</a>"
+          + '<a class="button button--secondary" href="' + Cal.subscribeUrl(key + ".ics") + '">' + esc(t("js.calApple")) + "</a>"
+          + '<a class="button button--secondary" href="' + Cal.outlookUrl(key) + '">' + esc(t("js.calOutlook")) + "</a>"
+          + "</div>";
+        document.getElementById("cal-subscribe").innerHTML = t("js.calSubscribe", {
+          href: Cal.subscribeUrl("events.ics"),
+          webcal: Cal.webcalUrl("events.ics")
+        });
+      }
+
+      render();
+      document.addEventListener("i18n:change", render);
+    })();
+  </script>
+</body>
+</html>

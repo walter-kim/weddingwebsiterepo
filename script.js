@@ -6,7 +6,7 @@
    ========================================================================== */
 
 // 1) Google Sheets endpoint (Apps Script web app URL).
-//    See Wedding RSVP/google-apps-script/SETUP.md — paste the /exec URL here:
+//    See google-apps-script/SETUP.md in the wedding-prep repo — paste the /exec URL here:
 const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyeMLPDdG60ww8Vr1k2o5uH7-X-mGylXGfCnLQ6Y0I0_I_ZkFe61H_sN9uzXN_u16q6DA/exec";
 
 // 2) Fallback email if Sheets isn’t configured or the network request fails.
@@ -74,7 +74,8 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
         "Form": "Wedding Question",
         "Guest name": data["Guest name"] || "",
         "Email": data["Email"] || "",
-        "Message": data["Message"] || data["Question"] || ""
+        "Message": data["Message"] || data["Question"] || "",
+        "Language": data["Language used"] || "en"
       };
     }
 
@@ -93,7 +94,10 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       "Welcome dinner / brunch": data["Welcome dinner / brunch"] || "",
       "Dietary restrictions": data["Dietary restrictions"] || "",
       "Dietary details (Other)": data["Dietary details (Other)"] || "",
-      "Message": data["Message"] || ""
+      "Message": data["Message"] || "",
+      "Invitation includes another guest": data["Invitation includes another guest"] || "",
+      "Language": data["Language used"] || "en",
+      "Signed in as": data["Signed in as"] || ""
     };
   }
 
@@ -189,6 +193,12 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
   function isHttpEndpoint(url) {
     return !!url && url.indexOf("http") === 0;
+  }
+
+  // Hidden "_gotcha" field: people never see it, spam bots fill it in.
+  function looksLikeBot(formEl) {
+    var hp = formEl.querySelector('input[name="_gotcha"]');
+    return !!(hp && hp.value.trim());
   }
 
   /* ---------- Contact / questions form ---------- */
@@ -304,6 +314,12 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       if (!validateContact()) {
         showContactStatus("error", t("js.errSummary"));
         updateContactMailto();
+        return;
+      }
+
+      if (looksLikeBot(contactForm)) {
+        contactForm.classList.add("is-sent");
+        showContactStatus("success", t("js.contactSuccess", { name: "" }));
         return;
       }
 
@@ -675,9 +691,23 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
     data._subject = "Wedding RSVP: " + data["Guest name"] + " — " + attending;
     data["Language used"] = (window.I18N && I18N.current) || "en";
+    var identity = window.WeddingGate && WeddingGate.getIdentity && WeddingGate.getIdentity();
+    data["Signed in as"] = (identity && identity.name) || "";
 
     return data;
   }
+
+  /* ---------- Edit a sent reply ---------- */
+  // Guests can change their answers and send again; the sheet keeps every
+  // reply and the latest one (same email) is the one that counts.
+  status.addEventListener("click", function (e) {
+    if (!e.target.closest("[data-rsvp-edit]")) return;
+    form.classList.remove("is-sent");
+    status.className = "form-status";
+    status.innerHTML = "";
+    hideCalendarReminders();
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 
   /* ---------- Submit ---------- */
   form.addEventListener("submit", function (e) {
@@ -688,6 +718,12 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
     if (!validate()) {
       showStatus("error", t("js.errSummary"));
+      return;
+    }
+
+    if (looksLikeBot(form)) {
+      form.classList.add("is-sent");
+      showStatus("success", t("js.success", { name: "", thanks: "" }));
       return;
     }
 
@@ -713,7 +749,9 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
         showStatus("success", t("js.success", {
           name: escapeHtml(data["Guest name"]),
           thanks: t(attendingNow ? "js.successAttending" : "js.successDeclining")
-        }));
+        }) + "<p>" + t("js.successEmail", { email: escapeHtml(data["Email"]) }) + "</p>"
+          + '<p><button type="button" class="button button--secondary button--compact" data-rsvp-edit>'
+          + escapeHtml(t("js.editReply")) + "</button></p>");
         if (attendingNow && eventKeys.length) {
           calendarState = { keys: eventKeys };
           renderCalendarReminders();

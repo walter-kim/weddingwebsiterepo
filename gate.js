@@ -14,8 +14,11 @@
 (function () {
   "use strict";
 
-  // Shared invitation word (case-insensitive). Same field also accepts name/email.
-  var INVITE_CODE = "goldengate";
+  // Shared invitation word (case-insensitive), stored as a short hash so it
+  // isn't readable in this file. To change the word, run
+  //   python3 ../tools/invite-hash.py "newword"
+  // and paste the result here. Same field also accepts name/email.
+  var INVITE_HASH = "ae0e063";
 
   var UNLOCK_KEY = "kw-wedding-unlocked";
   var IDENTITY_KEY = "kw-wedding-guest";
@@ -38,6 +41,16 @@
       .replace(/['']/g, "")
       .split(/[^a-z0-9\u0080-\uffff]+/i)
       .filter(Boolean);
+  }
+
+  // FNV-1a (32-bit) of the normalized text. Matches tools/invite-hash.py.
+  function inviteHash(value) {
+    var h = 0x811c9dc5;
+    for (var i = 0; i < value.length; i++) {
+      h ^= value.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h.toString(16);
   }
 
   function looksLikeEmail(value) {
@@ -77,7 +90,7 @@
           JSON.stringify({
             name: guest.n || "",
             email: guest.e || "",
-            tier: guest.t == null ? null : guest.t
+            tier: null
           })
         );
       }
@@ -232,7 +245,7 @@
       var raw = input.value;
 
       // Path 1: shared invitation word (no identity stored).
-      if (normalize(raw) === normalize(INVITE_CODE)) {
+      if (inviteHash(normalize(raw)) === INVITE_HASH) {
         finishUnlock(null);
         return;
       }
