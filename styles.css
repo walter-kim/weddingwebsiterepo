@@ -172,7 +172,13 @@ p.placeholder,
 
 /* ---------- Buttons ---------- */
 .button {
-  display: inline-block;
+  /* Flex centring so <a> and <button> versions line up at the same height. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  -webkit-appearance: none;
+  appearance: none;
   font-family: var(--font-body);
   font-size: 0.85rem;
   letter-spacing: 0.18em;

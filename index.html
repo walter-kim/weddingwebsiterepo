@@ -154,14 +154,15 @@
     <section class="section" id="schedule">
       <div class="container container--narrow">
         <h2 class="section__title" data-i18n="schedule.title">Schedule of Events</h2>
-        <p class="lead" data-i18n="schedule.lead">
+        <p class="lead" data-i18n="schedule.lead" id="schedule-lead-all">
           Three days together in Nagoya. The wedding celebration is on Saturday; the welcome dinner
           and brunch are optional — just let us know on the RSVP form if you can join.
         </p>
+          <p class="lead" data-i18n="schedule.leadWedding" id="schedule-lead-wedding" hidden>We can’t wait to celebrate with you at our wedding in Nagoya on Saturday, October 9.</p>
       </div>
       <div class="container">
         <ol class="timeline">
-          <li class="timeline__item">
+          <li class="timeline__item" data-party-event="dinner">
             <div class="timeline__date">
               <span class="timeline__day" data-i18n="schedule.fri">Friday</span>
               <span class="timeline__num" data-i18n="schedule.friDate">October 8</span>
@@ -186,7 +187,7 @@
               <div class="schedule-cal" data-schedule-cal="wedding"></div>
             </div>
           </li>
-          <li class="timeline__item">
+          <li class="timeline__item" data-party-event="brunch">
             <div class="timeline__date">
               <span class="timeline__day" data-i18n="schedule.sun">Sunday</span>
               <span class="timeline__num" data-i18n="schedule.sunDate">October 10</span>

@@ -144,6 +144,7 @@ var I18N = (function () {
 
       "schedule.title": "スケジュール",
       "schedule.lead": "名古屋で過ごす3日間。ウェディングのお祝いは土曜日です。前日のウェルカムディナーと翌日のブランチは任意ですので、ご参加いただける場合はご出欠フォームでお知らせください。",
+      "schedule.leadWedding": "10月9日（土）、名古屋での結婚式で皆様とお祝いできることを楽しみにしています。",
       "schedule.fri": "金曜日",
       "schedule.friDate": "10月8日",
       "schedule.dinnerTitle": "ウェルカムディナー",
@@ -367,6 +368,7 @@ var I18N = (function () {
 
       "schedule.title": "活動行程",
       "schedule.lead": "在名古屋共度三天。婚禮慶典於星期六舉行；前一天的迎賓晚宴與隔天的早午餐為自由參加，若能出席，請在回覆表單中告訴我們。",
+      "schedule.leadWedding": "期待10月9日（六）在名古屋的婚禮上與您一同慶祝。",
       "schedule.fri": "星期五",
       "schedule.friDate": "10月8日",
       "schedule.dinnerTitle": "迎賓晚宴",
@@ -590,6 +592,7 @@ var I18N = (function () {
 
       "schedule.title": "행사 일정",
       "schedule.lead": "나고야에서 함께하는 3일. 결혼식 축하 행사는 토요일에 열립니다. 전날의 웰컴 디너와 다음 날의 브런치는 선택 사항이니, 참석 가능하시면 회신 양식에서 알려 주세요.",
+      "schedule.leadWedding": "10월 9일 (토) 나고야에서 열리는 결혼식에서 함께 축하할 날을 기다리고 있습니다.",
       "schedule.fri": "금요일",
       "schedule.friDate": "10월 8일",
       "schedule.dinnerTitle": "웰컴 디너",

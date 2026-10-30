@@ -527,6 +527,14 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
      keep the question, so they can still see and change their answer. */
   function setEventsVisible(show) {
     eventsField.hidden = !show;
+    // The schedule shows the dinner and brunch only to parties invited to them.
+    document.querySelectorAll("[data-party-event]").forEach(function (el) { el.hidden = !show; });
+    var leadAll = document.getElementById("schedule-lead-all");
+    var leadWedding = document.getElementById("schedule-lead-wedding");
+    if (leadAll && leadWedding) {
+      leadAll.hidden = !show;
+      leadWedding.hidden = show;
+    }
     if (!show) {
       form.querySelectorAll('input[name="events"]').forEach(function (b) { b.checked = false; });
     }
@@ -585,11 +593,18 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       check("attending", reply.attending === "yes" ? "Joyfully accepts" : "Regretfully declines", true);
       updateAttendingDetails();
     }
-    // Guests besides the signed-in one: names from the reply, else the list.
-    var me = [id.name, id.listName].map(function (n) { return String(n || "").toLowerCase(); });
-    var others = (reply.plusOnes || reply.names || []).filter(function (n) {
-      return me.indexOf(String(n).toLowerCase()) === -1;
-    });
+    // Guests besides the signed-in one. The reply may have been sent by
+    // anyone in the party, so drop whoever is signed in from its names; if
+    // the reply uses names we can't match (e.g. a Chinese name vs. the list
+    // name), fall back to the other people on the guest list.
+    var norm = function (n) { return String(n || "").toLowerCase().replace(/[^a-z0-9\u0080-\uffff]+/g, ""); };
+    var me = [id.name, id.listName].map(norm);
+    var named = reply.source === "website"
+      ? [reply.guestName].concat(reply.plusOnes || [])
+      : (reply.names || []);
+    named = named.filter(Boolean);
+    var others = named.filter(function (n) { return me.indexOf(norm(n)) === -1; });
+    if (others.length === named.length) others = (id.others || []).filter(Boolean);
     var count = Math.max(1, Math.min(reply.guestCount || 1, partySize()));
     guestsSelect.value = String(count);
     updateExtraGuests();
