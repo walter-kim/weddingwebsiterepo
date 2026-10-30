@@ -356,8 +356,12 @@
         // Step 1: password
         '<form class="invite-gate__form" id="invite-form" autocomplete="off">' +
           '<p class="invite-gate__lead" data-i18n="gate.lead">This page is for our invited guests. Please enter the invitation password.</p>' +
-          '<label for="invite-password" data-i18n="gate.label">Invitation password</label>' +
-          '<input type="password" id="invite-password" name="password" autocapitalize="off" autocorrect="off" spellcheck="false" required>' +
+          '<label for="invite-code" data-i18n="gate.label">Invitation password</label>' +
+          // A plain text box, not type="password": phones and password apps
+          // kept filling in saved passwords or offering "strong password"
+          // here. The invitation password is printed on the invite anyway.
+          '<input type="text" id="invite-code" name="invite_code" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"' +
+          ' enterkeyhint="go" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" required>' +
           '<button class="button button--primary" type="submit" data-i18n="gate.submit">Enter</button>' +
         "</form>" +
 
@@ -378,7 +382,7 @@
     document.body.appendChild(gate);
 
     var pwForm = document.getElementById("invite-form");
-    var pwInput = document.getElementById("invite-password");
+    var pwInput = document.getElementById("invite-code");
     var nameForm = document.getElementById("invite-name-form");
     var nameInput = document.getElementById("invite-name");
     var confirmBox = document.getElementById("invite-confirm");
