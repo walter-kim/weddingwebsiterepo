@@ -874,9 +874,11 @@ html.is-locked body > *:not(.invite-gate) { display: none !important; }
 .rsvp-form.is-sent .field,
 .rsvp-form.is-sent .form-actions,
 .rsvp-form.is-sent .replying-as,
+.rsvp-form.is-sent .existing-reply,
 .rsvp-form.is-sent .party-note { display: none; }
 
 .replying-as { margin: 0 0 1.2rem; color: var(--ink-soft); }
+.existing-reply { margin: 0 0 1.4rem; }
 .party-note {
   margin: 0 0 1.2rem;
   padding: 0.8rem 1rem;

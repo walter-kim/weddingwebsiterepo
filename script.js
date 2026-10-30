@@ -103,7 +103,8 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       "Party": data["Party"] || "",
       "Party size": data["Party size"] || "",
       "Language": data["Language used"] || "en",
-      "Signed in as": data["Signed in as"] || ""
+      "Signed in as": data["Signed in as"] || "",
+      "Use previous email": data["Use previous email"] || ""
     };
   }
 
@@ -427,6 +428,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   var partyNote = document.getElementById("party-note");
   var eventsField = document.getElementById("events-field");
   var closedBox = document.getElementById("rsvp-closed");
+  var existingNote = document.getElementById("existing-reply");
   var extraGuests = document.getElementById("extra-guests");
   var replyingAs = document.getElementById("replying-as");
   var dietaryOtherField = document.getElementById("dietary-other-field");
@@ -523,35 +525,110 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   /* Welcome dinner / brunch: only parties with a tier 1 or 2 guest are
      asked. Parties who already said yes to either one before this rule
      keep the question, so they can still see and change their answer. */
-  var eventsChecked = {}; // party → true/false from the sheet
   function setEventsVisible(show) {
     eventsField.hidden = !show;
     if (!show) {
       form.querySelectorAll('input[name="events"]').forEach(function (b) { b.checked = false; });
     }
   }
-  function updateEventsField() {
+
+  /* What this party already told us (website reply or in person), fetched
+     once per party after sign-in. The form is filled in from it so guests
+     review and change their answer instead of starting over. */
+  var partyState = {};   // party → { hadEvents, reply }
+  var prefilledFor = null;
+  var existingReply = null;
+
+  function loadPartyState() {
     var id = identity();
-    if (!id || id.events) {
+    if (!id) {
       setEventsVisible(true);
       return;
     }
     var key = String(id.party);
-    if (key in eventsChecked) {
-      setEventsVisible(eventsChecked[key]);
+    if (key in partyState) {
+      applyPartyState(id, partyState[key]);
       return;
     }
-    setEventsVisible(false);
+    setEventsVisible(!!id.events);
     if (!isHttpEndpoint(SHEETS_ENDPOINT)) return;
     var names = [id.name, id.listName].concat(id.others || []).filter(Boolean).join("|");
     fetch(SHEETS_ENDPOINT + "?party=" + encodeURIComponent(key) + "&names=" + encodeURIComponent(names))
       .then(function (res) { return res.json(); })
-      .then(function (json) { eventsChecked[key] = !!(json && json.hadEvents); })
-      .catch(function () { eventsChecked[key] = true; }) // can't check: don't take it away
+      .then(function (json) {
+        partyState[key] = { hadEvents: !!(json && json.hadEvents), reply: (json && json.reply) || null };
+      })
+      .catch(function () { partyState[key] = { hadEvents: true, reply: null }; }) // can't check: don't take it away
       .then(function () {
         var now = identity();
-        if (now && String(now.party) === key) setEventsVisible(eventsChecked[key]);
+        if (now && String(now.party) === key) applyPartyState(now, partyState[key]);
       });
+  }
+
+  function applyPartyState(id, state) {
+    setEventsVisible(!!id.events || state.hadEvents);
+    existingReply = state.reply;
+    if (state.reply && prefilledFor !== String(id.party)) {
+      prefilledFor = String(id.party);
+      prefillFromReply(id, state.reply);
+    }
+    renderExistingNote();
+  }
+
+  function check(name, value, on) {
+    var box = form.querySelector('input[name="' + name + '"][value="' + value + '"]');
+    if (box) box.checked = on;
+  }
+
+  function prefillFromReply(id, reply) {
+    if (reply.attending) {
+      check("attending", reply.attending === "yes" ? "Joyfully accepts" : "Regretfully declines", true);
+      updateAttendingDetails();
+    }
+    // Guests besides the signed-in one: names from the reply, else the list.
+    var me = [id.name, id.listName].map(function (n) { return String(n || "").toLowerCase(); });
+    var others = (reply.plusOnes || reply.names || []).filter(function (n) {
+      return me.indexOf(String(n).toLowerCase()) === -1;
+    });
+    var count = Math.max(1, Math.min(reply.guestCount || 1, partySize()));
+    guestsSelect.value = String(count);
+    updateExtraGuests();
+    extraGuestInputs().forEach(function (input, i) {
+      if (others[i]) input.value = others[i];
+    });
+    if (reply.source === "website") {
+      form.querySelectorAll('input[name="events"]').forEach(function (b) {
+        var v = b.value.toLowerCase();
+        b.checked = (v.indexOf("dinner") !== -1 && reply.events.toLowerCase().indexOf("dinner") !== -1)
+          || (v.indexOf("brunch") !== -1 && reply.events.toLowerCase().indexOf("brunch") !== -1)
+          || (b.value === "Not available" && reply.events === "Not available");
+      });
+      (reply.dietary || []).forEach(function (d) { check("dietary", d, true); });
+      updateDietaryOther();
+      form.elements.dietary_other.value = reply.dietaryOther || "";
+      form.elements.message.value = reply.message || "";
+    }
+    if (reply.emailHint) {
+      form.elements.email.placeholder = t("js.emailLast", { hint: reply.emailHint });
+    }
+  }
+
+  function renderExistingNote() {
+    if (!existingNote) return;
+    var reply = existingReply;
+    if (!reply || form.classList.contains("is-sent")) {
+      existingNote.hidden = true;
+      existingNote.innerHTML = "";
+      return;
+    }
+    var lang = (window.I18N && I18N.current) || "en";
+    var locales = { en: "en-US", ja: "ja-JP", zh: "zh-TW", ko: "ko-KR" };
+    existingNote.innerHTML = reply.source === "website"
+      ? t("js.existingWeb", {
+          date: escapeHtml(new Date(reply.submitted).toLocaleDateString(locales[lang] || "en-US", { year: "numeric", month: "long", day: "numeric" }))
+        })
+      : t(reply.attending === "yes" ? "js.existingInPerson" : "js.existingInPersonNo");
+    existingNote.hidden = false;
   }
 
   function refreshParty() {
@@ -559,7 +636,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     renderPartyNote();
     buildGuestOptions();
     updateExtraGuests();
-    updateEventsField();
+    loadPartyState();
   }
 
   /* ---------- After the deadline ---------- */
@@ -633,6 +710,10 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   if (rsvpIsClosed()) showClosed();
   document.addEventListener("i18n:change", function () {
     if (!closedBox.hidden) showClosed();
+    renderExistingNote();
+    if (existingReply && existingReply.emailHint) {
+      form.elements.email.placeholder = t("js.emailLast", { hint: existingReply.emailHint });
+    }
   });
 
   /* ---------- Validation ---------- */
@@ -660,7 +741,10 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
     var emailValue = email.value.trim();
     var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
-    if (!emailValue) {
+    var reuseEmail = !emailValue && existingReply && existingReply.emailHint;
+    if (reuseEmail) {
+      clearError(email.closest(".field"));
+    } else if (!emailValue) {
       fail(email.closest(".field"), t("js.errEmailEmpty"));
     } else if (!emailOk) {
       fail(email.closest(".field"), t("js.errEmailInvalid"));
@@ -800,6 +884,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     var id = identity();
     data["Signed in as"] = (id && id.name) || "";
     data["Party"] = (id && id.party) || "";
+    if (!data["Email"] && existingReply && existingReply.emailHint) data["Use previous email"] = "yes";
     data["Party size"] = String(partySize());
 
     return data;
@@ -811,6 +896,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   status.addEventListener("click", function (e) {
     if (!e.target.closest("[data-rsvp-edit]")) return;
     form.classList.remove("is-sent");
+    renderExistingNote();
     status.className = "form-status";
     status.innerHTML = "";
     hideCalendarReminders();
@@ -859,6 +945,11 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     postToSheet(data)
       .then(function () {
         form.classList.add("is-sent");
+        // What we now have on file is this reply.
+        var hint = (existingReply && existingReply.emailHint) || "";
+        if (data["Email"]) hint = data["Email"].charAt(0) + "•••@" + data["Email"].split("@")[1];
+        existingReply = { source: "website", submitted: new Date().toISOString(), emailHint: hint };
+        renderExistingNote();
         showStatus("success", t("js.success", {
           name: escapeHtml(data["Guest name"]),
           thanks: t(attendingNow ? "js.successAttending" : "js.successDeclining")
