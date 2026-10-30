@@ -83,7 +83,7 @@ var I18N = (function () {
       "gate.nameLabel": "Your full name",
       "gate.nameSubmit": "Find my invitation",
       "gate.notFound": "We couldn’t find that name on our guest list. Try the name we’d know you by, or email us at {email}.",
-      "gate.tooMany": "Several guests match that. Please enter your first and last name.",
+      "gate.tooMany": "More than one guest has that name. Please enter your full name (first and last).",
       "gate.choose": "A few guests match. Which one is you?",
       "gate.confirmTitle": "Welcome, {name}!",
       "gate.partyOne": "Your invitation is for you.",

@@ -147,10 +147,11 @@
     });
     if (exact.length) return exact;
 
-    // "Kyle Cameron" finds "Kyle"; "Brian" finds "Brian" and "Brian Chin".
+    // "Kyle Cameron" finds "Kyle"; "Sean" finds every Sean. When that
+    // partial match fits more than one guest, the gate asks for the full name.
     var q = nameTokens(input);
     if (!q.length) return [];
-    return pool.filter(function (g) {
+    var partial = pool.filter(function (g) {
       return keysOf(g).some(function (k) {
         var parts = nameTokens(k);
         if (!parts.length) return false;
@@ -160,6 +161,8 @@
         return allIn(parts, q) || allIn(q, parts);
       });
     });
+    partial.partial = true;
+    return partial;
   }
 
   function partyOf(guests, guest) {
@@ -316,8 +319,12 @@
         nameInput.focus();
         return;
       }
-      if (hits.length > 5) {
-        showError("gate.tooMany", null, "Several guests match that. Please enter your first and last name.");
+      // A first name alone that fits several guests ("Sean"): ask for the
+      // full name. A full name that still fits several (two "Eric"s on the
+      // list): let them pick.
+      var oneWord = nameTokens(nameInput.value).length < 2;
+      if (hits.length > 5 || (hits.partial && hits.length > 1 && oneWord)) {
+        showError("gate.tooMany", null, "More than one guest has that name. Please enter your full name (first and last).");
         nameInput.focus();
         return;
       }
