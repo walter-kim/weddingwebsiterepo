@@ -101,14 +101,10 @@
     return out;
   }
 
-  // Forgiving form of the typed password: full-width letters from Asian
-  // keyboards become plain ones, and anything that isn't a letter or digit
-  // is dropped (spaces in "Golden Gate", a trailing ".", quotes or invisible
-  // characters copied from an email).
+  // The password must be exactly "goldengate". Only spaces before or after
+  // it and capital letters (phones capitalize the first letter) are ignored.
   function passwordKey(value) {
-    var s = String(value || "");
-    if (s.normalize) s = s.normalize("NFKC");
-    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return String(value || "").trim().toLowerCase();
   }
 
   // Typed with a non-English keyboard (Korean, Zhuyin…)?
@@ -125,6 +121,7 @@
   var LOG_ENDPOINT = "https://script.google.com/macros/s/AKfycby4QBBdH-rTh81G7_kpG2dEXcHhf4fGZp3lxWsY0-P8AYOLG2T8nSiDoZbzoEclLKps/exec";
   var logsSent = 0;
   var lastFailure = "";
+  var passwordFailures = 0;
 
   function shapeOf(value) {
     return Array.prototype.map.call(String(value || ""), function (ch) {
@@ -430,8 +427,12 @@
         button.innerHTML = label;
         button.disabled = false;
         if (!list) {
+          passwordFailures++;
           logProblem("password", { problem: lastFailure + (fallbackFailed ? "; backup failed" : ""), shape: shapeOf(pwInput.value) });
-          if (fallbackFailed) {
+          if (passwordFailures >= 2) {
+            showError("gate.tryComputer", { email: escapeHtml(COUPLE_EMAIL) },
+              "Still not working? Please try again on a computer, or email us at " + COUPLE_EMAIL + " and we’ll help.");
+          } else if (fallbackFailed) {
             showError("gate.unsupported", null, "This browser can’t open the guest list. Please open teamkimkim.com in Safari or Chrome.");
           } else if (typedNonLatin(pwInput.value)) {
             showError("gate.keyboard", null, "That password isn’t right. Please switch your keyboard to English (ABC) and try again.");
