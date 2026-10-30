@@ -147,22 +147,28 @@
     });
     if (exact.length) return exact;
 
-    // "Kyle Cameron" finds "Kyle"; "Sean" finds every Sean. When that
-    // partial match fits more than one guest, the gate asks for the full name.
+    // Word-by-word match on the full name we have: the real name when the
+    // list has one ("Luben Raytchev", in any order), otherwise the list name
+    // ("Thomas Lee" finds "Thomas" when that's all the list knows).
     var q = nameTokens(input);
     if (!q.length) return [];
-    var partial = pool.filter(function (g) {
-      return keysOf(g).some(function (k) {
-        var parts = nameTokens(k);
-        if (!parts.length) return false;
-        var allIn = function (a, b) {
-          return a.every(function (tok) { return b.indexOf(tok) !== -1; });
-        };
-        return allIn(parts, q) || allIn(q, parts);
-      });
+    var allIn = function (a, b) {
+      return a.every(function (tok) { return b.indexOf(tok) !== -1; });
+    };
+    return pool.filter(function (g) {
+      var parts = nameTokens(g.r || g.n);
+      if (!parts.length) return false;
+      return allIn(parts, q) || (parts.length > 1 && allIn(q, parts));
     });
-    partial.partial = true;
-    return partial;
+  }
+
+  // Guests sign in with their full name, not just a first name. A name in
+  // Chinese, Japanese or Korean characters is complete on its own.
+  function isFullName(raw) {
+    var input = normalize(raw);
+    if (input.indexOf("@") !== -1) return true;
+    if (/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/.test(input)) return true;
+    return nameTokens(input).length >= 2;
   }
 
   function partyOf(guests, guest) {
@@ -312,6 +318,11 @@
     nameForm.addEventListener("submit", function (e) {
       e.preventDefault();
       clearError();
+      if (!isFullName(nameInput.value)) {
+        showError("gate.fullName", null, "Please enter your full name (first and last name).");
+        nameInput.focus();
+        return;
+      }
       var hits = findGuests(guests, nameInput.value);
       if (!hits.length) {
         showError("gate.notFound", { email: escapeHtml(COUPLE_EMAIL) },
@@ -319,11 +330,7 @@
         nameInput.focus();
         return;
       }
-      // A first name alone that fits several guests ("Sean"): ask for the
-      // full name. A full name that still fits several (two "Eric"s on the
-      // list): let them pick.
-      var oneWord = nameTokens(nameInput.value).length < 2;
-      if (hits.length > 5 || (hits.partial && hits.length > 1 && oneWord)) {
+      if (hits.length > 5) {
         showError("gate.tooMany", null, "More than one guest has that name. Please enter your full name (first and last).");
         nameInput.focus();
         return;
