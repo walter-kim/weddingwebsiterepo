@@ -601,7 +601,8 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     var me = [id.name, id.listName].map(norm);
     // In-person replies only know guest-list labels ("Eileen's bf"), so use
     // the list's real names and leave unnamed guests blank to fill in.
-    var named = reply.source === "website"
+    var full = reply.source !== "in person"; // website or Save the Date form
+    var named = full
       ? [reply.guestName].concat(reply.plusOnes || []).filter(Boolean)
       : [];
     var others = named.filter(function (n) { return me.indexOf(norm(n)) === -1; });
@@ -613,7 +614,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     extraGuestInputs().forEach(function (input, i) {
       input.value = others[i] || "";
     });
-    if (reply.source === "website") {
+    if (full) {
       form.querySelectorAll('input[name="events"]').forEach(function (b) {
         var v = b.value.toLowerCase();
         b.checked = (v.indexOf("dinner") !== -1 && reply.events.toLowerCase().indexOf("dinner") !== -1)
@@ -640,7 +641,9 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     }
     var lang = (window.I18N && I18N.current) || "en";
     var locales = { en: "en-US", ja: "ja-JP", zh: "zh-TW", ko: "ko-KR" };
-    existingNote.innerHTML = reply.source === "website"
+    existingNote.innerHTML = reply.source === "save the date"
+      ? t("js.existingStd")
+      : reply.source === "website"
       ? t("js.existingWeb", {
           date: escapeHtml(new Date(reply.submitted).toLocaleDateString(locales[lang] || "en-US", { year: "numeric", month: "long", day: "numeric" }))
         })
