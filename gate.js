@@ -23,7 +23,9 @@
   var COUPLE_EMAIL = "kimkimchinv@gmail.com";
 
   function normalize(value) {
-    return String(value || "")
+    var s = String(value || "");
+    if (s.normalize) s = s.normalize("NFKC");
+    return s
       .replace(/[‘’‚′]/g, "'")
       .replace(/[“”]/g, '"')
       .replace(/\s+/g, " ")
@@ -111,10 +113,53 @@
     return !!(window.crypto && crypto.subtle && window.TextEncoder);
   }
 
+  // Backup for phone browsers without Web Crypto (old Android, some in-app
+  // browsers): the same PBKDF2 + AES-GCM in plain JavaScript, loaded only then.
+  var FORGE_SRC = "vendor/forge-1.3.1.min.js";
+  var FORGE_SRI = "sha384-xE6n3RBMZWgwAhyzoIMfY7HN3oDBa/+HBwFFNyxsdY8kseup7C4Blx1yDzprEESV";
+  var forgeLoading = null;
+  var fallbackFailed = false;
+
+  function loadForge() {
+    if (window.forge) return Promise.resolve(window.forge);
+    if (!forgeLoading) {
+      forgeLoading = new Promise(function (resolve, reject) {
+        var tag = document.createElement("script");
+        tag.src = FORGE_SRC;
+        tag.integrity = FORGE_SRI;
+        tag.crossOrigin = "anonymous";
+        tag.onload = function () { window.forge ? resolve(window.forge) : reject(new Error("forge")); };
+        tag.onerror = function () { forgeLoading = null; reject(new Error("forge")); };
+        document.head.appendChild(tag);
+      });
+    }
+    return forgeLoading;
+  }
+
+  function unsealWithForge(sealed, password) {
+    return loadForge().then(function (forge) {
+      var key = forge.pkcs5.pbkdf2(forge.util.encodeUtf8(passwordKey(password)),
+        forge.util.decode64(sealed.salt), sealed.iter, 32, forge.md.sha256.create());
+      var data = forge.util.decode64(sealed.data);
+      var decipher = forge.cipher.createDecipher("AES-GCM", key);
+      decipher.start({ iv: forge.util.decode64(sealed.iv), tag: forge.util.createBuffer(data.slice(-16)) });
+      decipher.update(forge.util.createBuffer(data.slice(0, -16)));
+      if (!decipher.finish()) return null;
+      return JSON.parse(forge.util.decodeUtf8(decipher.output.getBytes()));
+    }).then(function (list) {
+      fallbackFailed = false;
+      return list;
+    }, function () {
+      fallbackFailed = true;
+      return null;
+    });
+  }
+
   // Resolves to the guest array, or null when the password is wrong.
   function unseal(password) {
     var sealed = window.WEDDING_GUESTS_SEALED;
-    if (!sealed || !canUnseal()) return Promise.resolve(null);
+    if (!sealed) return Promise.resolve(null);
+    if (!canUnseal() || window.__forceForge) return unsealWithForge(sealed, password);
     var enc = new TextEncoder();
     return crypto.subtle.importKey("raw", enc.encode(passwordKey(password)), "PBKDF2", false, ["deriveKey"])
       .then(function (base) {
@@ -260,7 +305,7 @@
         '<form class="invite-gate__form" id="invite-name-form" autocomplete="on" hidden>' +
           '<p class="invite-gate__lead" data-i18n="gate.nameLead">Thank you! Now please enter your full name.</p>' +
           '<label for="invite-name" data-i18n="gate.nameLabel">Your full name</label>' +
-          '<input type="text" id="invite-name" name="name" autocomplete="name" spellcheck="false" required>' +
+          '<input type="text" id="invite-name" name="name" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false" required>' +
           '<button class="button button--primary" type="submit" data-i18n="gate.nameSubmit">Find my invitation</button>' +
         "</form>" +
 
@@ -317,7 +362,7 @@
       unseal(pwInput.value).then(function (list) {
         button.disabled = false;
         if (!list) {
-          if (!canUnseal()) {
+          if (fallbackFailed) {
             showError("gate.unsupported", null, "This browser can’t open the guest list. Please open teamkimkim.com in Safari or Chrome.");
           } else if (/[^\x00-\x7f]/.test(passwordKey(pwInput.value))) {
             showError("gate.keyboard", null, "That password isn’t right. Please switch your keyboard to English (ABC) and try again.");
