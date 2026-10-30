@@ -358,8 +358,13 @@
       e.preventDefault();
       clearError();
       var button = pwForm.querySelector("button");
+      var label = button.innerHTML;
       button.disabled = true;
+      // The backup decryption can take several seconds on older phones.
+      var busy = setTimeout(function () { button.textContent = "…"; }, 600);
       unseal(pwInput.value).then(function (list) {
+        clearTimeout(busy);
+        button.innerHTML = label;
         button.disabled = false;
         if (!list) {
           if (fallbackFailed) {
