@@ -99,12 +99,24 @@
     return out;
   }
 
+  // Forgiving form of the typed password: full-width letters from Asian
+  // keyboards become plain ones, and spaces ("Golden Gate") are dropped.
+  function passwordKey(value) {
+    var s = String(value || "");
+    if (s.normalize) s = s.normalize("NFKC");
+    return s.replace(/\s+/g, "").toLowerCase();
+  }
+
+  function canUnseal() {
+    return !!(window.crypto && crypto.subtle && window.TextEncoder);
+  }
+
   // Resolves to the guest array, or null when the password is wrong.
   function unseal(password) {
     var sealed = window.WEDDING_GUESTS_SEALED;
-    if (!sealed || !window.crypto || !crypto.subtle) return Promise.resolve(null);
+    if (!sealed || !canUnseal()) return Promise.resolve(null);
     var enc = new TextEncoder();
-    return crypto.subtle.importKey("raw", enc.encode(normalize(password)), "PBKDF2", false, ["deriveKey"])
+    return crypto.subtle.importKey("raw", enc.encode(passwordKey(password)), "PBKDF2", false, ["deriveKey"])
       .then(function (base) {
         return crypto.subtle.deriveKey(
           { name: "PBKDF2", salt: b64ToBytes(sealed.salt), iterations: sealed.iter, hash: "SHA-256" },
@@ -240,7 +252,7 @@
         '<form class="invite-gate__form" id="invite-form" autocomplete="off">' +
           '<p class="invite-gate__lead" data-i18n="gate.lead">This page is for our invited guests. Please enter the invitation password.</p>' +
           '<label for="invite-password" data-i18n="gate.label">Invitation password</label>' +
-          '<input type="password" id="invite-password" name="password" autocapitalize="off" spellcheck="false" required>' +
+          '<input type="password" id="invite-password" name="password" autocapitalize="off" autocorrect="off" spellcheck="false" required>' +
           '<button class="button button--primary" type="submit" data-i18n="gate.submit">Enter</button>' +
         "</form>" +
 
@@ -305,7 +317,13 @@
       unseal(pwInput.value).then(function (list) {
         button.disabled = false;
         if (!list) {
-          showError("gate.error", null, "That password isn’t right. Please check your invitation and try again.");
+          if (!canUnseal()) {
+            showError("gate.unsupported", null, "This browser can’t open the guest list. Please open teamkimkim.com in Safari or Chrome.");
+          } else if (/[^\x00-\x7f]/.test(passwordKey(pwInput.value))) {
+            showError("gate.keyboard", null, "That password isn’t right. Please switch your keyboard to English (ABC) and try again.");
+          } else {
+            showError("gate.error", null, "That password isn’t right. Please check your invitation and try again.");
+          }
           pwInput.focus();
           pwInput.select();
           return;

@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    /* The password check needs a secure (https) page; phones that open http:// links would reject the right password. */
+    if (location.protocol === "http:" && /(^|\.)teamkimkim\.com$/.test(location.hostname)) location.replace("https:" + location.href.slice(5));
+  </script>
   <title>Kimberly &amp; Walter — October 9, 2027 — Nagoya, Japan</title>
   <meta name="description" content="Kimberly (Pochia) Chin and Walter Kim are celebrating their marriage in Nagoya, Japan on Saturday, October 9, 2027. Details, travel guide, and RSVP.">
   <meta property="og:title" content="Kimberly &amp; Walter — October 9, 2027 — Nagoya, Japan">

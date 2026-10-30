@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    /* The password check needs a secure (https) page; phones that open http:// links would reject the right password. */
+    if (location.protocol === "http:" && /(^|\.)teamkimkim\.com$/.test(location.hostname)) location.replace("https:" + location.href.slice(5));
+  </script>
   <title>Have a question? — Kimberly &amp; Walter</title>
   <meta name="description" content="Ask Kimberly and Walter a question about their wedding in Nagoya, Japan on Saturday, October 9, 2027.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
