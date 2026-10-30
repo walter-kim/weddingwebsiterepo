@@ -599,17 +599,19 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     // name), fall back to the other people on the guest list.
     var norm = function (n) { return String(n || "").toLowerCase().replace(/[^a-z0-9\u0080-\uffff]+/g, ""); };
     var me = [id.name, id.listName].map(norm);
+    // In-person replies only know guest-list labels ("Eileen's bf"), so use
+    // the list's real names and leave unnamed guests blank to fill in.
     var named = reply.source === "website"
-      ? [reply.guestName].concat(reply.plusOnes || [])
-      : (reply.names || []);
-    named = named.filter(Boolean);
+      ? [reply.guestName].concat(reply.plusOnes || []).filter(Boolean)
+      : [];
     var others = named.filter(function (n) { return me.indexOf(norm(n)) === -1; });
-    if (others.length === named.length) others = (id.others || []).filter(Boolean);
+    var listOthers = (id.others || []).map(function (n) { return n || ""; });
+    if (!named.length || others.length === named.length) others = listOthers;
     var count = Math.max(1, Math.min(reply.guestCount || 1, partySize()));
     guestsSelect.value = String(count);
     updateExtraGuests();
     extraGuestInputs().forEach(function (input, i) {
-      if (others[i]) input.value = others[i];
+      input.value = others[i] || "";
     });
     if (reply.source === "website") {
       form.querySelectorAll('input[name="events"]').forEach(function (b) {
