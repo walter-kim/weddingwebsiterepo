@@ -102,11 +102,58 @@
   }
 
   // Forgiving form of the typed password: full-width letters from Asian
-  // keyboards become plain ones, and spaces ("Golden Gate") are dropped.
+  // keyboards become plain ones, and anything that isn't a letter or digit
+  // is dropped (spaces in "Golden Gate", a trailing ".", quotes or invisible
+  // characters copied from an email).
   function passwordKey(value) {
     var s = String(value || "");
     if (s.normalize) s = s.normalize("NFKC");
-    return s.replace(/\s+/g, "").toLowerCase();
+    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  // Typed with a non-English keyboard (Korean, Zhuyin…)?
+  function typedNonLatin(value) {
+    var s = String(value || "");
+    if (s.normalize) s = s.normalize("NFKC");
+    return /[\u0370-\u1fff\u3040-\u30ff\u3100-\u312f\u3130-\u318f\u3400-\u9fff\uac00-\ud7af]/.test(s);
+  }
+
+  // Failed sign-ins go to the "Sign-in problems" tab of the RSVP sheet, so we
+  // can see what goes wrong on guests' phones. For the password only its
+  // shape is sent (a = lowercase, A = capital, 9 = digit, _ = space, else the
+  // character code), never the text.
+  var LOG_ENDPOINT = "https://script.google.com/macros/s/AKfycby4QBBdH-rTh81G7_kpG2dEXcHhf4fGZp3lxWsY0-P8AYOLG2T8nSiDoZbzoEclLKps/exec";
+  var logsSent = 0;
+  var lastFailure = "";
+
+  function shapeOf(value) {
+    return Array.prototype.map.call(String(value || ""), function (ch) {
+      if (/[a-z]/.test(ch)) return "a";
+      if (/[A-Z]/.test(ch)) return "A";
+      if (/[0-9]/.test(ch)) return "9";
+      if (ch === " ") return "_";
+      return "[U+" + ch.charCodeAt(0).toString(16).toUpperCase() + "]";
+    }).join("");
+  }
+
+  function logProblem(step, details) {
+    if (logsSent >= 6 || !window.fetch) return;
+    logsSent++;
+    var payload = {
+      "Form": "Gate log",
+      "Step": step,
+      "Problem": details.problem || "",
+      "Typed": details.typed || "",
+      "Shape": details.shape || "",
+      "Device": navigator.userAgent,
+      "Secure page": String(!!window.isSecureContext),
+      "Web Crypto": String(canUnseal()),
+      "Page": location.href.split("#")[0]
+    };
+    try {
+      fetch(LOG_ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload), keepalive: true }).catch(function () {});
+    } catch (e) { /* never block sign-in on logging */ }
   }
 
   function canUnseal() {
@@ -158,11 +205,19 @@
   // Resolves to the guest array, or null when the password is wrong.
   function unseal(password) {
     var sealed = window.WEDDING_GUESTS_SEALED;
-    if (!sealed) return Promise.resolve(null);
-    if (!canUnseal() || window.__forceForge) return unsealWithForge(sealed, password);
+    if (!sealed) {
+      lastFailure = "guest list file did not load";
+      return Promise.resolve(null);
+    }
+    if (!canUnseal() || window.__forceForge) {
+      lastFailure = "no Web Crypto, used backup";
+      return unsealWithForge(sealed, password);
+    }
     var enc = new TextEncoder();
+    var stage = "importKey";
     return crypto.subtle.importKey("raw", enc.encode(passwordKey(password)), "PBKDF2", false, ["deriveKey"])
       .then(function (base) {
+        stage = "deriveKey";
         return crypto.subtle.deriveKey(
           { name: "PBKDF2", salt: b64ToBytes(sealed.salt), iterations: sealed.iter, hash: "SHA-256" },
           base,
@@ -172,12 +227,20 @@
         );
       })
       .then(function (key) {
+        stage = "decrypt";
         return crypto.subtle.decrypt({ name: "AES-GCM", iv: b64ToBytes(sealed.iv) }, key, b64ToBytes(sealed.data));
       })
       .then(function (plain) {
+        stage = "read";
         return JSON.parse(new TextDecoder().decode(plain));
       })
-      .catch(function () { return null; });
+      .catch(function (err) {
+        // A failed decrypt just means a wrong password. Anything earlier is
+        // this browser's Web Crypto misbehaving: try the backup instead.
+        lastFailure = stage + ": " + ((err && err.name) || "error");
+        if (stage === "decrypt") return null;
+        return unsealWithForge(sealed, password);
+      });
   }
 
   /* ---------- Finding the guest ---------- */
@@ -367,9 +430,10 @@
         button.innerHTML = label;
         button.disabled = false;
         if (!list) {
+          logProblem("password", { problem: lastFailure + (fallbackFailed ? "; backup failed" : ""), shape: shapeOf(pwInput.value) });
           if (fallbackFailed) {
             showError("gate.unsupported", null, "This browser can’t open the guest list. Please open teamkimkim.com in Safari or Chrome.");
-          } else if (/[^\x00-\x7f]/.test(passwordKey(pwInput.value))) {
+          } else if (typedNonLatin(pwInput.value)) {
             showError("gate.keyboard", null, "That password isn’t right. Please switch your keyboard to English (ABC) and try again.");
           } else {
             showError("gate.error", null, "That password isn’t right. Please check your invitation and try again.");
@@ -387,12 +451,14 @@
       e.preventDefault();
       clearError();
       if (!isFullName(nameInput.value)) {
+        logProblem("name", { problem: "not a full name", typed: nameInput.value.slice(0, 80) });
         showError("gate.fullName", null, "Please enter your full name (first and last name).");
         nameInput.focus();
         return;
       }
       var hits = findGuests(guests, nameInput.value);
       if (!hits.length) {
+        logProblem("name", { problem: "not on the guest list", typed: nameInput.value.slice(0, 80) });
         showError("gate.notFound", { email: escapeHtml(COUPLE_EMAIL) },
           "We couldn’t find that name on our guest list. Try the name we’d know you by, or email us at " + COUPLE_EMAIL + ".");
         nameInput.focus();
