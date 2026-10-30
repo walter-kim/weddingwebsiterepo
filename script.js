@@ -605,7 +605,17 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     var named = full
       ? [reply.guestName].concat(reply.plusOnes || []).filter(Boolean)
       : [];
-    var others = named.filter(function (n) { return me.indexOf(norm(n)) === -1; });
+    // "Luben Raytchev" on the form is the same person as "Luben" on the list.
+    var words = function (n) { return String(n || "").toLowerCase().split(/[^a-z0-9\u0080-\uffff]+/).filter(Boolean); };
+    var myWords = [id.name, id.listName].map(words).filter(function (w) { return w.length; });
+    var isMe = function (n) {
+      if (me.indexOf(norm(n)) !== -1) return true;
+      var w = words(n);
+      return myWords.some(function (m) {
+        return m.every(function (x) { return w.indexOf(x) !== -1; }) || w.every(function (x) { return m.indexOf(x) !== -1; });
+      });
+    };
+    var others = named.filter(function (n) { return !isMe(n); });
     var listOthers = (id.others || []).map(function (n) { return n || ""; });
     if (!named.length || others.length === named.length) others = listOthers;
     var count = Math.max(1, Math.min(reply.guestCount || 1, partySize()));
