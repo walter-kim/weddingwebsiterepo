@@ -44,11 +44,11 @@ window.WeddingCalendar = (function () {
         "uid": "wedding-celebration@teamkimkim.com",
         "title": "Kimberly & Walter — Wedding Celebration",
         "date": "2027-10-09",
-        "allDay": true,
-        "startTime": null,
+        "allDay": false,
+        "startTime": "15:15",
         "endTime": null,
         "location": "Hyakkarou 百花籠, 3-6-3 Chikaramachi, Higashi-ku, Nagoya-shi, Aichi 461-0018, Japan",
-        "description": "Ceremony and reception times to be announced.\n\nVenue: Hyakkarou (百花籠), Shirakabe district, Nagoya.\nWedding website: https://teamkimkim.com/#schedule"
+        "description": "Begins at 3:15 PM.\n\nVenue: Hyakkarou (百花籠), Shirakabe district, Nagoya.\nWedding website: https://teamkimkim.com/#schedule"
       },
       "dinner": {
         "uid": "welcome-dinner@teamkimkim.com",

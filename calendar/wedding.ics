@@ -7,14 +7,13 @@ X-WR-CALNAME:Kimberly & Walter — Nagoya Wedding
 X-WR-TIMEZONE:Asia/Tokyo
 BEGIN:VEVENT
 UID:wedding-celebration@teamkimkim.com
-DTSTAMP:20261025T034203Z
-DTSTART;VALUE=DATE:20271009
-DTEND;VALUE=DATE:20271010
+DTSTAMP:20261108T034056Z
+DTSTART;TZID=Asia/Tokyo:20271009T151500
+DTEND;TZID=Asia/Tokyo:20271009T151500
 SUMMARY:Kimberly & Walter — Wedding Celebration
 LOCATION:Hyakkarou 百花籠\, 3-6-3 Chikaramachi\, Higashi-ku\, Nagoya-shi\, Aic
  hi 461-0018\, Japan
-DESCRIPTION:Ceremony and reception times to be announced.\n\nVenue: Hyakkar
- ou (百花籠)\, Shirakabe district\, Nagoya.\nWedding website: https://teamkimk
- im.com/#schedule
+DESCRIPTION:Begins at 3:15 PM.\n\nVenue: Hyakkarou (百花籠)\, Shirakabe distri
+ ct\, Nagoya.\nWedding website: https://teamkimkim.com/#schedule
 END:VEVENT
 END:VCALENDAR
