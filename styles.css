@@ -848,6 +848,20 @@ html.is-locked body > *:not(.invite-gate) { display: none !important; }
 }
 .field.is-invalid .choice { border-color: var(--error); }
 
+.choice--needs-name {
+  flex-wrap: wrap;
+}
+.coming-who__name {
+  flex: 1 1 100%;
+  margin: 0.35rem 0 0 1.7rem;
+  min-width: 0;
+}
+#coming-who-field .field__hint {
+  margin: 0 0 0.75rem;
+  color: var(--ink-muted, #5c574e);
+  font-size: 0.9rem;
+}
+
 .form-actions {
   display: flex;
   flex-direction: column;

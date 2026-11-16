@@ -186,7 +186,7 @@
             <div class="timeline__body">
               <h3 class="h3" data-i18n="schedule.weddingTitle">Wedding Celebration</h3>
               <p data-i18n="schedule.weddingAddress"><strong>Hyakkarou 百花籠</strong><br>3-6-3 Chikaramachi, Higashi-ku, Nagoya, Aichi 461-0018<br><span lang="ja">愛知県名古屋市東区主税町3丁目6-3</span></p>
-              <p data-i18n="schedule.weddingPlaceholder">3:15&nbsp;PM</p>
+              <p class="placeholder" data-i18n="schedule.weddingPlaceholder">[Ceremony and reception times to be announced]</p>
               <a class="button button--secondary" href="https://www.google.com/maps/search/?api=1&query=Hyakkarou+3-6-3+Chikaramachi+Higashi-ku+Nagoya+Aichi+461-0018+Japan" target="_blank" rel="noopener" data-i18n="schedule.maps">Open in Google Maps</a>
               <div class="schedule-cal" data-schedule-cal="wedding"></div>
             </div>
@@ -321,7 +321,7 @@
           </details>
           <details class="faq__item">
             <summary data-i18n="faq.q4">May I bring a guest?</summary>
-            <p data-i18n="faq.a4">We would love to celebrate with everyone dear to you. Our venue, however, is intimate and holds us to a strict guest count, so we are only able to offer a plus-one to a limited number of guests. Your invitation will note if a guest or children are included. Thank you so much for your understanding.</p>
+            <p data-i18n="faq.a4">We would love to celebrate with everyone dear to you. Our venue, however, is intimate and holds us to a strict guest count, so we are only able to offer a plus-one to a limited number of guests. If a guest is included in your invitation, we will let you know personally. Thank you so much for your understanding.</p>
           </details>
           <details class="faq__item">
             <summary data-i18n="faq.q5">Will there be a registry?</summary>
@@ -393,8 +393,13 @@
               <p class="field__error" id="guests-error" role="alert"></p>
             </div>
 
-            <!-- One name box per extra guest; built by script.js from the party size. -->
-            <div id="extra-guests"></div>
+            <!-- When guest count > 1: checkboxes for who in the party is coming. -->
+            <fieldset class="field" id="coming-who-field" hidden>
+              <legend data-i18n="rsvp.comingWho">Who will be attending?</legend>
+              <p class="field__hint" id="coming-who-hint"></p>
+              <div class="choice-group choice-group--stacked" id="extra-guests"></div>
+              <p class="field__error" id="coming-who-error" role="alert"></p>
+            </fieldset>
 
             <fieldset class="field" id="events-field" hidden>
               <legend data-i18n="rsvp.events">Can you also join us for the welcome dinner and brunch?</legend>

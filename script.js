@@ -429,6 +429,8 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
   var eventsField = document.getElementById("events-field");
   var closedBox = document.getElementById("rsvp-closed");
   var existingNote = document.getElementById("existing-reply");
+  var comingWhoField = document.getElementById("coming-who-field");
+  var comingWhoHint = document.getElementById("coming-who-hint");
   var extraGuests = document.getElementById("extra-guests");
   var replyingAs = document.getElementById("replying-as");
   var dietaryOtherField = document.getElementById("dietary-other-field");
@@ -494,32 +496,119 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     guestsField.hidden = size <= 1;
   }
 
-  // One name box per extra guest, prefilled with the names we know.
-  function updateExtraGuests() {
-    var want = guestCount() - 1;
-    var known = ((identity() || {}).others || []).filter(Boolean);
-    var boxes = extraGuests.querySelectorAll(".field");
-    for (var i = boxes.length; i < want; i++) {
-      var id = "extra_guest_" + (i + 2);
-      var field = document.createElement("div");
-      field.className = "field";
-      field.innerHTML = '<label for="' + id + '"><span data-extra-label="' + (i + 2) + '"></span>'
-        + ' <span class="req" aria-hidden="true">*</span></label>'
-        + '<input type="text" id="' + id + '" name="extra_guest" autocomplete="off">'
-        + '<p class="field__error" role="alert"></p>';
-      field.querySelector("input").value = known[i] || "";
-      extraGuests.appendChild(field);
-    }
-    for (var j = boxes.length - 1; j >= want; j--) boxes[j].remove();
-    labelExtraGuests();
+  // Party roster for the "who is coming" checkboxes (signed-in person first).
+  function partyMembers() {
+    var id = identity();
+    if (!id) return [];
+    var guestWord = t("gate.guest", null, "a guest");
+    var members = [{ key: "self", label: id.name, known: true, self: true }];
+    (id.others || []).forEach(function (name, i) {
+      members.push({
+        key: "other-" + i,
+        label: name || guestWord,
+        known: !!name,
+        self: false
+      });
+    });
+    return members;
   }
-  function labelExtraGuests() {
-    extraGuests.querySelectorAll("[data-extra-label]").forEach(function (el) {
-      el.textContent = t("js.guestName", { n: el.getAttribute("data-extra-label") });
+
+  // When count > 1, show checkboxes for everyone on the invitation.
+  // The signed-in guest stays checked; others are chosen to match the count.
+  function updateExtraGuests() {
+    if (!comingWhoField || !extraGuests) return;
+    var want = guestCount();
+    var members = partyMembers();
+    if (want <= 1 || members.length <= 1) {
+      comingWhoField.hidden = true;
+      extraGuests.innerHTML = "";
+      if (comingWhoHint) comingWhoHint.textContent = "";
+      return;
+    }
+
+    comingWhoField.hidden = false;
+    if (comingWhoHint) {
+      comingWhoHint.textContent = t("js.comingWhoHint", { count: want });
+    }
+
+    var prevChecked = {};
+    var prevNames = {};
+    extraGuests.querySelectorAll('input[name="coming_who"]').forEach(function (box) {
+      prevChecked[box.value] = box.checked;
+      var nameInput = box.closest("label") && box.closest("label").querySelector('input[name="extra_guest"]');
+      if (nameInput) prevNames[box.value] = nameInput.value;
+    });
+
+    extraGuests.innerHTML = "";
+    members.forEach(function (m) {
+      var label = document.createElement("label");
+      label.className = "choice" + (m.known ? "" : " choice--needs-name");
+      var box = document.createElement("input");
+      box.type = "checkbox";
+      box.name = "coming_who";
+      box.value = m.key;
+      box.checked = m.self ? true : !!prevChecked[m.key];
+      if (m.self) box.disabled = true;
+      var span = document.createElement("span");
+      span.textContent = m.label;
+      label.appendChild(box);
+      label.appendChild(span);
+      if (!m.known) {
+        var nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.name = "extra_guest";
+        nameInput.className = "coming-who__name";
+        nameInput.autocomplete = "off";
+        nameInput.placeholder = t("js.unnamedGuest");
+        nameInput.hidden = !box.checked;
+        nameInput.value = prevNames[m.key] || "";
+        label.appendChild(nameInput);
+      }
+      extraGuests.appendChild(label);
+    });
+    enforceComingWhoCount();
+  }
+
+  function comingWhoBoxes() {
+    return Array.prototype.slice.call(extraGuests.querySelectorAll('input[name="coming_who"]'));
+  }
+
+  function checkedComingWho() {
+    return comingWhoBoxes().filter(function (b) { return b.checked; });
+  }
+
+  function enforceComingWhoCount() {
+    extraGuests.querySelectorAll(".choice--needs-name").forEach(function (row) {
+      var box = row.querySelector('input[name="coming_who"]');
+      var nameInput = row.querySelector('input[name="extra_guest"]');
+      if (nameInput) nameInput.hidden = !(box && box.checked);
     });
   }
+
+  function selectedComingNames() {
+    // Names of everyone marked as coming, excluding the signed-in guest.
+    var names = [];
+    comingWhoBoxes().forEach(function (box) {
+      if (!box.checked || box.value === "self") return;
+      var row = box.closest("label");
+      var nameInput = row && row.querySelector('input[name="extra_guest"]');
+      if (nameInput) {
+        var typed = nameInput.value.trim();
+        if (typed) names.push(typed);
+      } else {
+        var span = row && row.querySelector("span");
+        if (span && span.textContent.trim()) names.push(span.textContent.trim());
+      }
+    });
+    return names;
+  }
+
+  function labelExtraGuests() {
+    if (comingWhoField && !comingWhoField.hidden) updateExtraGuests();
+  }
+
   function extraGuestInputs() {
-    return Array.prototype.slice.call(extraGuests.querySelectorAll('input[name="extra_guest"]'));
+    return Array.prototype.slice.call(extraGuests.querySelectorAll('input[name="extra_guest"]:not([hidden])'));
   }
 
   /* Welcome dinner / brunch: only parties with a tier 1 or 2 guest are
@@ -617,13 +706,40 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     };
     var others = named.filter(function (n) { return !isMe(n); });
     var listOthers = (id.others || []).map(function (n) { return n || ""; });
-    if (!named.length || others.length === named.length) others = listOthers;
+    if (!named.length || others.length === named.length) others = listOthers.slice();
     var count = Math.max(1, Math.min(reply.guestCount || 1, partySize()));
     guestsSelect.value = String(count);
     updateExtraGuests();
-    extraGuestInputs().forEach(function (input, i) {
-      input.value = others[i] || "";
+    // Check party members who match the previous reply's plus-ones.
+    var matchName = function (a, b) {
+      if (!a || !b) return false;
+      if (norm(a) === norm(b)) return true;
+      var wa = words(a), wb = words(b);
+      return wa.every(function (x) { return wb.indexOf(x) !== -1; })
+        || wb.every(function (x) { return wa.indexOf(x) !== -1; });
+    };
+    comingWhoBoxes().forEach(function (box) {
+      if (box.value === "self") return;
+      var row = box.closest("label");
+      var span = row && row.querySelector("span");
+      var label = span ? span.textContent.trim() : "";
+      var nameInput = row && row.querySelector('input[name="extra_guest"]');
+      var hit = others.findIndex(function (n) { return matchName(n, label); });
+      if (hit === -1 && nameInput) {
+        // Unnamed slot: take the next leftover reply name.
+        hit = others.findIndex(function (n) {
+          return n && !partyMembers().some(function (m) { return m.known && matchName(n, m.label); });
+        });
+      }
+      if (hit !== -1) {
+        box.checked = true;
+        if (nameInput) nameInput.value = others[hit];
+        others.splice(hit, 1);
+      } else if (!box.disabled) {
+        box.checked = false;
+      }
     });
+    enforceComingWhoCount();
     if (full) {
       form.querySelectorAll('input[name="events"]').forEach(function (b) {
         var v = b.value.toLowerCase();
@@ -721,6 +837,16 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     });
   });
   guestsSelect.addEventListener("change", updateExtraGuests);
+  if (extraGuests) {
+    extraGuests.addEventListener("change", function (e) {
+      if (!e.target || e.target.name !== "coming_who") return;
+      if (e.target.checked && checkedComingWho().length > guestCount()) {
+        e.target.checked = false;
+      }
+      enforceComingWhoCount();
+      if (comingWhoField) clearError(comingWhoField);
+    });
+  }
   document.addEventListener("wedding:unlocked", refreshParty);
   document.addEventListener("i18n:change", function () {
     renderReplyingAs();
@@ -789,13 +915,25 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       clearError(attendingField);
     }
 
-    extraGuestInputs().forEach(function (input) {
-      if (isAttending() && !input.value.trim()) {
-        fail(input.closest(".field"), t("js.errPlusOne"));
+    if (isAttending() && comingWhoField && !comingWhoField.hidden) {
+      var want = guestCount();
+      var got = checkedComingWho().length;
+      if (got !== want) {
+        fail(comingWhoField, t("js.errComingCount", { count: want }));
       } else {
-        clearError(input.closest(".field"));
+        var missingName = false;
+        extraGuestInputs().forEach(function (input) {
+          if (!input.value.trim()) missingName = true;
+        });
+        if (missingName) {
+          fail(comingWhoField, t("js.errPlusOne"));
+        } else {
+          clearError(comingWhoField);
+        }
       }
-    });
+    } else if (comingWhoField) {
+      clearError(comingWhoField);
+    }
 
     if (firstInvalid) {
       var focusable = firstInvalid.querySelector("input, select, textarea");
@@ -900,10 +1038,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       var count = String(guestCount());
       data["Number of guests (including yourself)"] = count;
       data["Guest count"] = count;
-      data["Plus one name"] = extraGuestInputs()
-        .map(function (input) { return input.value.trim(); })
-        .filter(Boolean)
-        .join(", ");
+      data["Plus one name"] = selectedComingNames().join(", ");
       data["Welcome dinner / brunch"] = eventsField.hidden ? "" : events.join(", ");
       data["Dietary restrictions"] = dietary.join(", ");
       data["Dietary details (Other)"] = form.elements.dietary_other.value.trim();
