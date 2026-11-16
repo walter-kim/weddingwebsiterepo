@@ -460,6 +460,13 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     return Math.min(Number(guestsSelect.value) || 1, partySize());
   }
 
+  function selectableRoster(id) {
+    if (!id || !window.WeddingGate || !WeddingGate.ensureRoster) return [];
+    return WeddingGate.ensureRoster(id)
+      .map(function (m, i) { return { member: m, index: i }; })
+      .filter(function (row) { return row.member && !row.member.placeholder; });
+  }
+
   function renderReplyingAs() {
     var id = identity();
     if (!replyingAs) return;
@@ -467,11 +474,64 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       replyingAs.innerHTML = "";
       return;
     }
-    replyingAs.innerHTML = t("js.replyingAs", { name: escapeHtml(id.name) })
-      + ' <button type="button" class="link-button" data-sign-out>' + escapeHtml(t("js.notYou")) + "</button>";
+    var others = selectableRoster(id).filter(function (row) {
+      return row.member.listName !== id.listName && row.member.name !== id.name;
+    });
+    var html = t("js.replyingAs", { name: escapeHtml(id.name) });
+    if (others.length) {
+      html += ' <button type="button" class="link-button" data-party-switch aria-expanded="false">'
+        + escapeHtml(t("js.notYou")) + "</button>";
+      html += '<div class="party-switch" id="party-switch" hidden>';
+      html += '<p class="party-switch__lead">' + escapeHtml(t("js.partySwitchLead")) + "</p>";
+      html += '<div class="party-switch__choices">';
+      others.forEach(function (row) {
+        var label = row.member.name || row.member.listName;
+        html += '<button type="button" class="button button--secondary party-switch__choice" data-party-pick="'
+          + row.index + '">' + escapeHtml(label) + "</button>";
+      });
+      html += "</div></div>";
+    } else {
+      // Solo invitation: fall back to a full sign-out.
+      html += ' <button type="button" class="link-button" data-sign-out>'
+        + escapeHtml(t("js.notYou")) + "</button>";
+    }
+    replyingAs.innerHTML = html;
   }
+
+  function applyIdentitySwitch(next) {
+    if (!next) return;
+    var nameInput = form.elements.name;
+    var emailInput = form.elements.email;
+    if (nameInput) nameInput.value = next.name || "";
+    if (emailInput) {
+      emailInput.value = next.email || "";
+      emailInput.placeholder = "";
+    }
+    existingReply = null;
+    prefilledFor = null;
+    if (existingNote) {
+      existingNote.hidden = true;
+      existingNote.innerHTML = "";
+    }
+    refreshParty();
+  }
+
   if (replyingAs) {
     replyingAs.addEventListener("click", function (e) {
+      var switchBtn = e.target.closest("[data-party-switch]");
+      if (switchBtn) {
+        var panel = document.getElementById("party-switch");
+        if (!panel) return;
+        var open = panel.hidden;
+        panel.hidden = !open;
+        switchBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        return;
+      }
+      var pick = e.target.closest("[data-party-pick]");
+      if (pick && window.WeddingGate && WeddingGate.switchIdentity) {
+        applyIdentitySwitch(WeddingGate.switchIdentity(Number(pick.getAttribute("data-party-pick"))));
+        return;
+      }
       if (e.target.closest("[data-sign-out]") && window.WeddingGate) WeddingGate.signOut();
     });
   }
@@ -513,8 +573,8 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
     return members;
   }
 
-  // When count > 1, show checkboxes for everyone on the invitation.
-  // The signed-in guest stays checked; others are chosen to match the count.
+  // When count > 1, show checkboxes for everyone on the invitation
+  // (including the signed-in guest — they can be unchecked if needed).
   function updateExtraGuests() {
     if (!comingWhoField || !extraGuests) return;
     var want = guestCount();
@@ -533,7 +593,9 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
 
     var prevChecked = {};
     var prevNames = {};
+    var hadBoxes = false;
     extraGuests.querySelectorAll('input[name="coming_who"]').forEach(function (box) {
+      hadBoxes = true;
       prevChecked[box.value] = box.checked;
       var nameInput = box.closest("label") && box.closest("label").querySelector('input[name="extra_guest"]');
       if (nameInput) prevNames[box.value] = nameInput.value;
@@ -547,8 +609,7 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       box.type = "checkbox";
       box.name = "coming_who";
       box.value = m.key;
-      box.checked = m.self ? true : !!prevChecked[m.key];
-      if (m.self) box.disabled = true;
+      box.checked = hadBoxes ? !!prevChecked[m.key] : false;
       var span = document.createElement("span");
       span.textContent = m.label;
       label.appendChild(box);
@@ -718,24 +779,26 @@ const CONTACT_FORM_ENDPOINT = SHEETS_ENDPOINT;
       return wa.every(function (x) { return wb.indexOf(x) !== -1; })
         || wb.every(function (x) { return wa.indexOf(x) !== -1; });
     };
+    var comingNames = named.length
+      ? named.slice()
+      : [id.name].concat(others).filter(Boolean);
     comingWhoBoxes().forEach(function (box) {
-      if (box.value === "self") return;
       var row = box.closest("label");
       var span = row && row.querySelector("span");
       var label = span ? span.textContent.trim() : "";
       var nameInput = row && row.querySelector('input[name="extra_guest"]');
-      var hit = others.findIndex(function (n) { return matchName(n, label); });
+      var hit = comingNames.findIndex(function (n) { return matchName(n, label); });
       if (hit === -1 && nameInput) {
         // Unnamed slot: take the next leftover reply name.
-        hit = others.findIndex(function (n) {
+        hit = comingNames.findIndex(function (n) {
           return n && !partyMembers().some(function (m) { return m.known && matchName(n, m.label); });
         });
       }
       if (hit !== -1) {
         box.checked = true;
-        if (nameInput) nameInput.value = others[hit];
-        others.splice(hit, 1);
-      } else if (!box.disabled) {
+        if (nameInput) nameInput.value = comingNames[hit];
+        comingNames.splice(hit, 1);
+      } else {
         box.checked = false;
       }
     });

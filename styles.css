@@ -898,6 +898,26 @@ html.is-locked body > *:not(.invite-gate) { display: none !important; }
 .rsvp-form.is-sent .party-note { display: none; }
 
 .replying-as { margin: 0 0 1.2rem; color: var(--ink-soft); }
+.party-switch {
+  margin: 0.75rem 0 0;
+  padding: 0.9rem 1rem;
+  background: var(--ivory-deep);
+  border-radius: var(--radius);
+}
+.party-switch__lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.9rem;
+  color: var(--charcoal);
+}
+.party-switch__choices {
+  display: grid;
+  gap: 0.5rem;
+}
+.party-switch__choice {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
 .existing-reply { margin: 0 0 1.4rem; }
 .party-note {
   margin: 0 0 1.2rem;

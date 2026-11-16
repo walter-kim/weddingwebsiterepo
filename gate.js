@@ -292,8 +292,20 @@
     return guests.filter(function (g) { return g.p === guest.p; });
   }
 
+  function partyRoster(party) {
+    return party.map(function (g) {
+      return {
+        name: displayName(g),
+        listName: g.n,
+        email: g.e || "",
+        placeholder: !!g.x
+      };
+    });
+  }
+
   function buildIdentity(guests, guest) {
     var party = partyOf(guests, guest);
+    var roster = partyRoster(party);
     return {
       name: displayName(guest),
       listName: guest.n,
@@ -304,8 +316,55 @@
       // Everyone else on the invitation; null = unnamed guest (placeholder row).
       others: party.filter(function (g) { return g !== guest; }).map(function (g) {
         return g.x ? null : displayName(g);
-      })
+      }),
+      // Full party roster so “Not you?” can switch without the password again.
+      roster: roster
     };
+  }
+
+  // Older sessions may not have roster; rebuild it from name + others.
+  function ensureRoster(identity) {
+    if (!identity) return [];
+    if (identity.roster && identity.roster.length) return identity.roster;
+    var roster = [{
+      name: identity.name,
+      listName: identity.listName || identity.name,
+      email: identity.email || "",
+      placeholder: false
+    }];
+    (identity.others || []).forEach(function (n) {
+      roster.push({
+        name: n || "",
+        listName: n || "",
+        email: "",
+        placeholder: !n
+      });
+    });
+    identity.roster = roster;
+    return roster;
+  }
+
+  // Switch the signed-in person to someone else on the same invitation.
+  function switchIdentity(rosterIndex) {
+    var current = readIdentity();
+    if (!current) return null;
+    var roster = ensureRoster(current);
+    var member = roster[rosterIndex];
+    if (!member || member.placeholder) return null;
+    var next = {
+      name: member.name || member.listName,
+      listName: member.listName,
+      email: member.email || "",
+      party: current.party,
+      size: current.size,
+      events: current.events,
+      others: roster.filter(function (_g, i) { return i !== rosterIndex; }).map(function (g) {
+        return g.placeholder ? null : (g.name || g.listName || null);
+      }),
+      roster: roster
+    };
+    rememberIdentity(next);
+    return next;
   }
 
   function partySummary(identity) {
@@ -320,6 +379,8 @@
     isUnlocked: isUnlocked,
     getIdentity: readIdentity,
     partySummary: partySummary,
+    ensureRoster: ensureRoster,
+    switchIdentity: switchIdentity,
     signOut: signOut
   };
 
