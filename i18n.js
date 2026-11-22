@@ -478,6 +478,8 @@ var I18N = (function () {
       "faq.a5": "您願意遠赴日本與我們相聚，就是最珍貴的禮物。",
       "faq.q6": "如何前往會場？",
       "faq.a6": "可搭乘名古屋車站（太閤通口）出發的免費接駁車、約 15 分鐘的計程車，或地鐵櫻通線至高岳站（2 號出口步行 10 分鐘）。詳見<a href=\"#getting-there\">交通指南</a>。",
+      "faq.q8": "台灣公民前往日本需要簽證嗎？",
+      "faq.a8": "台灣公民若護照上有身分證字號，為觀光或出席婚禮等<strong>90 天以內</strong>的短期停留，<strong>不需要</strong>簽證。護照應在停留期間內有效，並需有空白頁供入境蓋章。規定可能變更，出發前請再至<a href=\"https://www.boca.gov.tw/sp-foof-countrycp-01-31-92761-1.html\" target=\"_blank\" rel=\"noopener\">中華民國外交部領事事務局日本頁面</a>確認。",
 
       "rsvp.eyebrow": "敬請回覆",
       "rsvp.title": "回覆出席",
@@ -862,6 +864,12 @@ var I18N = (function () {
         var val = dict[key];
         el.setAttribute(attr, val != null ? val : el.getAttribute(defAttr));
       });
+    });
+
+
+    document.querySelectorAll("[data-i18n-langs]").forEach(function (el) {
+      var langs = el.getAttribute("data-i18n-langs").split(/\s+/);
+      el.hidden = langs.indexOf(code) === -1;
     });
 
     document.documentElement.setAttribute("lang", lang.htmlLang);
