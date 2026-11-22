@@ -119,7 +119,7 @@ var I18N = (function () {
       "nav.schedule": "スケジュール",
       "nav.venue": "会場・アクセス",
       "nav.etiquette": "マナー",
-      "nav.faq": "よくあるご質問",
+      "nav.faq": "Q&A",
       "nav.contact": "お問い合わせ",
       "nav.rsvp": "ご出欠",
 
@@ -353,7 +353,7 @@ var I18N = (function () {
       "nav.schedule": "行程",
       "nav.venue": "會場與交通",
       "nav.etiquette": "禮儀",
-      "nav.faq": "常見問題",
+      "nav.faq": "Q&A",
       "nav.contact": "詢問",
       "nav.rsvp": "回覆出席",
 
@@ -589,7 +589,7 @@ var I18N = (function () {
       "nav.schedule": "일정",
       "nav.venue": "식장 & 교통",
       "nav.etiquette": "에티켓",
-      "nav.faq": "자주 묻는 질문",
+      "nav.faq": "Q&A",
       "nav.contact": "문의",
       "nav.rsvp": "참석 회신",
 
